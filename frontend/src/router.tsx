@@ -103,12 +103,12 @@ const settingsRoute = createRoute({
   ),
 });
 
-const cliAuthRoute = createRoute({
+const deviceLoginRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: "/cli-auth",
+  path: "/login/device",
   component: lazyRouteComponent(
-    () => import("./routes/CliAuthPage"),
-    "CliAuthPage",
+    () => import("./routes/DeviceLoginPage"),
+    "DeviceLoginPage",
   ),
 });
 
@@ -132,7 +132,7 @@ const funStatsRoute = createRoute({
 
 const routeTree = rootRoute.addChildren([
   loginRoute,
-  cliAuthRoute,
+  deviceLoginRoute,
   shareRoute,
   helpRoute,
   appRoute.addChildren([

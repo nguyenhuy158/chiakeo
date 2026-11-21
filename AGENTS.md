@@ -313,13 +313,20 @@ things reading the code does not show right away.
   dung + đúng số TK nhận. Mỗi giao dịch lưu 1 dòng `payment_transactions`
   (khóa = id SePay) và cộng dồn: chuyển thiếu vẫn `pending`, đủ mới `markPaid`
   (chỉ đổi request còn pending) rồi ghi trả nợ — không ghi hai lần.
-- **CLI đăng nhập bằng device code, server KHÔNG giữ secret**: CLI tự sinh
-  `ck_...`, chỉ gửi SHA-256 lên `/api/cli-auth/start`. Người dùng gõ mã ở
-  `/cli-auth` (cần session web thật) thì server mới tạo dòng
-  `chiakeo_mcp_tokens` với scope `api:full` đúng hash đó. Token này gọi được
-  REST như người dùng nhưng KHÔNG gọi được `/api/mcp-tokens`
-  (`requireSessionUser`) — đổi sang `requireUser` là token CLI tự đẻ ra token.
-  `/cli-auth` là route cấp root, không nằm trong `AppLayout`.
+- **CLI đăng nhập theo device flow của GitHub (RFC 8628)**:
+  `POST /api/login/device/code` → `device_code`, `user_code`,
+  `verification_uri`; người dùng gõ mã ở `/login/device` (cần session web thật,
+  `POST /api/login/device/approve`); CLI hỏi `POST /api/login/oauth/access_token`
+  (`grant_type=urn:ietf:params:oauth:grant-type:device_code`) và nhận
+  `authorization_pending` / `slow_down` / `expired_token` (HTTP 400) cho tới khi
+  có `access_token`. Nhận cả JSON lẫn form-urlencoded. Token `ck_...` scope
+  `api:full` do SERVER tạo lúc duyệt, lưu mã hóa AES-GCM (khóa từ
+  `BETTER_AUTH_SECRET`) trong `chiakeo_device_codes` tới lần CLI lấy đầu tiên
+  rồi xóa dòng; bảng chỉ giữ SHA-256 của `device_code`. Token này gọi được REST
+  như người dùng nhưng KHÔNG gọi được `/api/mcp-tokens` (`requireSessionUser`) —
+  đổi sang `requireUser` là token CLI tự đẻ ra token. `/login/device` là route
+  cấp root, không nằm trong `AppLayout`. Đổi `BETTER_AUTH_SECRET` thì mã đang
+  chờ lấy token hỏng (sống tối đa 10 phút).
 - **Prod chạy Turso, không phải D1**: worker có secret `TURSO_DATABASE_URL` nên
   migration prod là `pnpm db:migrate:remote` (drizzle-kit, cần `TURSO_*`);
   `wrangler d1 migrations apply` chỉ đổi D1 dùng chung mà app không đọc.

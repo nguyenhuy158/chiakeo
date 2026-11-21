@@ -8,7 +8,7 @@ import type {
   ApiFunStats,
   ApiGame,
   ApiGameDetail,
-  ApiCliAuthApproved,
+  ApiDeviceApproved,
   ApiMcpToken,
   ApiPaymentOptions,
   ApiPaymentRequest,
@@ -170,9 +170,9 @@ export type GameApiPort = {
     create(input: McpTokenInput): Promise<ApiCreatedMcpToken>;
     revoke(tokenId: string): Promise<{ ok: boolean }>;
   };
-  cliAuth: {
+  deviceLogin: {
     /** Duyet ma hien tren CLI; token chi duoc tao cho dung nguoi dang dang nhap. */
-    approve(userCode: string): Promise<ApiCliAuthApproved>;
+    approve(userCode: string): Promise<ApiDeviceApproved>;
   };
   ai: {
     suggestExpense(

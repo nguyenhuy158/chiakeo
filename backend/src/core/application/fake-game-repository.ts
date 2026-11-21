@@ -311,12 +311,20 @@ export function createFakeRepo(initial: Partial<FakeState> = {}) {
         state.deviceCodes.find((row) => row.id === id) || null,
       findByUserCode: async (userCode) =>
         state.deviceCodes.find((row) => row.userCode === userCode) || null,
-      approve: async (id, userId, now) => {
+      approve: async (id, userId, encryptedToken, now) => {
         const row = state.deviceCodes.find((item) => item.id === id);
         if (!row || row.userId || row.expiresAt <= now) return false;
         row.userId = userId;
+        row.encryptedToken = encryptedToken;
         row.approvedAt = now;
         return true;
+      },
+      markPolled: async (id, now) => {
+        const row = state.deviceCodes.find((item) => item.id === id);
+        if (row) row.lastPolledAt = now;
+      },
+      delete: async (id) => {
+        state.deviceCodes = state.deviceCodes.filter((row) => row.id !== id);
       },
       deleteExpired: async (now) => {
         state.deviceCodes = state.deviceCodes.filter(

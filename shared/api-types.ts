@@ -284,19 +284,23 @@ export type ApiPaymentRequest = {
   paidAmount: number;
 };
 
-export type ApiCliAuthStart = {
-  deviceCode: string;
+/** Tra ve cua POST /api/login/device/code, ten truong theo RFC 8628. */
+export type ApiDeviceCode = {
+  device_code: string;
   /** Dang XXXX-XXXX, nguoi dung go tren trang xac nhan. */
-  userCode: string;
-  verificationUrl: string;
-  expiresInSeconds: number;
-  intervalSeconds: number;
+  user_code: string;
+  verification_uri: string;
+  verification_uri_complete: string;
+  expires_in: number;
+  interval: number;
 };
 
-export type ApiCliAuthPoll = {
-  status: "pending" | "approved" | "expired";
+export type ApiDeviceToken = {
+  access_token: string;
+  token_type: "bearer";
+  scope: string;
 };
 
-export type ApiCliAuthApproved = {
+export type ApiDeviceApproved = {
   name: string;
 };

@@ -455,20 +455,22 @@ export const paymentTransactions = sqliteTable(
 );
 
 /**
- * Dang nhap CLI kieu device code. CLI tu sinh token va chi gui hash len day,
- * nen server khong bao gio giu ban token goc; duyet xong thi tao dong
- * `chiakeo_mcp_tokens` voi dung hash do.
+ * Dang nhap CLI theo device flow (RFC 8628, giong GitHub). Token do server tao
+ * luc nguoi dung duyet va chi nam o day dang ma hoa cho toi khi CLI lay mot
+ * lan; sau do dong bi xoa.
  */
 export const deviceCodes = sqliteTable("chiakeo_device_codes", {
-  /** Ma CLI giu de hoi ket qua; la bi mat ngau nhien 32 byte. */
+  /** SHA-256 hex cua device_code: DB bi lo cung khong dung duoc ma CLI giu. */
   id: text("id").primaryKey(),
   /** Ma ngan nguoi dung go tren web, dang XXXX-XXXX. */
   userCode: text("user_code").notNull().unique(),
-  tokenHash: text("token_hash").notNull(),
-  tokenPrefix: text("token_prefix").notNull(),
   name: text("name").notNull(),
   createdAt: text("created_at").notNull(),
   expiresAt: text("expires_at").notNull(),
   userId: text("user_id").references(() => user.id, { onDelete: "cascade" }),
   approvedAt: text("approved_at"),
+  /** Token da ma hoa bang khoa tu BETTER_AUTH_SECRET; chi co sau khi duyet. */
+  encryptedToken: text("encrypted_token"),
+  /** Lan cuoi CLI hoi, de tra slow_down khi hoi nhanh hon `interval`. */
+  lastPolledAt: text("last_polled_at"),
 });

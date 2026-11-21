@@ -26,7 +26,7 @@ import {
   useAddTransfer,
   useAiScanReceipt,
   useAiSuggestExpense,
-  useApproveCliAuth,
+  useApproveDeviceLogin,
   useArchivedGames,
   useArchiveGame,
   useClosedGames,
@@ -322,10 +322,10 @@ describe("React Query game mutations", () => {
     expect(revoke).toHaveBeenCalledWith("token");
   });
 
-  it("approves a CLI login code", async () => {
+  it("approves a device login code", async () => {
     const approve = vi.fn().mockResolvedValue({ name: "VM" });
-    provideGameApi({ cliAuth: { approve } } as unknown as GameApiPort);
-    const current = mount(useApproveCliAuth);
+    provideGameApi({ deviceLogin: { approve } } as unknown as GameApiPort);
+    const current = mount(useApproveDeviceLogin);
     await act(async () => {
       await current().mutateAsync("ABCD-2345");
     });

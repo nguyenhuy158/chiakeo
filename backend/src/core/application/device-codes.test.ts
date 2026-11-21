@@ -1,16 +1,18 @@
 import { describe, expect, it } from "vitest";
-import { CLI_USER_CODE_LENGTH } from "../../../../shared/schemas";
+import { DEVICE_GRANT_TYPE } from "../../../../shared/schemas";
 import type { McpTokenRow } from "../ports/game-repository";
-import { approveCliAuth, pollCliAuth, startCliAuth } from "./device-codes";
+import {
+  approveDeviceFlow,
+  pollDeviceFlow,
+  startDeviceFlow,
+} from "./device-codes";
 import { BadRequestError, NotFoundError } from "./errors";
 import { createFakeRepo } from "./fake-game-repository";
+import { authenticateMcpToken } from "./mcp-tokens";
 
-const START = {
-  tokenHash: "a".repeat(64),
-  tokenPrefix: "ck_abcdef",
-  name: "May ban",
-};
 const ORIGIN = "https://chiakeo.example";
+const SECRET = "server-secret";
+const ONE_DAY_AGO = "2020-01-01T00:00:00.000Z";
 
 function setup() {
   const fake = createFakeRepo();
@@ -18,22 +20,38 @@ function setup() {
   fake.repo.mcpTokens.insert = async (row) => {
     tokens.push(row);
   };
+  fake.repo.mcpTokens.findByHash = async (hash) =>
+    tokens.find((row) => row.tokenHash === hash) || null;
+  fake.repo.mcpTokens.revoke = async (id, _userId, at) => {
+    const row = tokens.find((item) => item.id === id);
+    if (row) row.revokedAt = at;
+    return Boolean(row);
+  };
   return { fake, repo: fake.repo, tokens };
 }
 
-describe("startCliAuth", () => {
-  it("returns a readable user code and a verification URL", async () => {
-    const { repo } = setup();
-    const started = await startCliAuth(repo, START, ORIGIN);
+const poll = (
+  repo: ReturnType<typeof setup>["repo"],
+  device_code: string,
+  grant_type = DEVICE_GRANT_TYPE,
+) => pollDeviceFlow(repo, { device_code, grant_type }, SECRET);
 
-    expect(started.userCode).toMatch(/^[A-Z2-9]{4}-[A-Z2-9]{4}$/);
-    expect(started.userCode.replace("-", "")).toHaveLength(
-      CLI_USER_CODE_LENGTH,
+describe("startDeviceFlow", () => {
+  it("returns the RFC 8628 fields and a link that fills the code", async () => {
+    const { repo, fake } = setup();
+    const started = await startDeviceFlow(repo, { name: "VM" }, ORIGIN);
+
+    expect(started.device_code).toMatch(/^[0-9a-f]{64}$/);
+    expect(started.user_code).toMatch(/^[A-Z2-9]{4}-[A-Z2-9]{4}$/);
+    expect(started.verification_uri).toBe(`${ORIGIN}/login/device`);
+    expect(started.verification_uri_complete).toBe(
+      `${ORIGIN}/login/device?user_code=${started.user_code}`,
     );
-    expect(started.deviceCode).toMatch(/^[0-9a-f]{64}$/);
-    expect(started.verificationUrl).toBe(`${ORIGIN}/cli-auth`);
-    expect(started.expiresInSeconds).toBeGreaterThan(0);
-    expect(started.intervalSeconds).toBeGreaterThan(0);
+    expect(started.expires_in).toBe(600);
+    expect(started.interval).toBe(5);
+    expect(JSON.stringify(fake.state.deviceCodes)).not.toContain(
+      started.device_code,
+    );
   });
 
   it("drops expired requests when a new one starts", async () => {
@@ -41,98 +59,133 @@ describe("startCliAuth", () => {
     fake.state.deviceCodes.push({
       id: "old",
       userCode: "OLDX-OLDX",
-      tokenHash: START.tokenHash,
-      tokenPrefix: START.tokenPrefix,
       name: "x",
-      createdAt: "2020-01-01T00:00:00.000Z",
-      expiresAt: "2020-01-01T00:10:00.000Z",
+      createdAt: ONE_DAY_AGO,
+      expiresAt: ONE_DAY_AGO,
       userId: null,
       approvedAt: null,
+      encryptedToken: null,
+      lastPolledAt: null,
     });
-    await startCliAuth(repo, START, ORIGIN);
+    await startDeviceFlow(repo, { name: "VM" }, ORIGIN);
     expect(fake.state.deviceCodes.map((row) => row.id)).not.toContain("old");
   });
 });
 
-describe("pollCliAuth", () => {
-  it("is pending, then approved, and unknown or expired codes are expired", async () => {
+describe("pollDeviceFlow", () => {
+  it("is pending, then slow_down when polled too fast", async () => {
+    const { repo } = setup();
+    const { device_code } = await startDeviceFlow(repo, { name: "VM" }, ORIGIN);
+
+    await expect(poll(repo, device_code)).rejects.toMatchObject({
+      code: "authorization_pending",
+    });
+    await expect(poll(repo, device_code)).rejects.toMatchObject({
+      code: "slow_down",
+    });
+  });
+
+  it("gives the token once after approval, then the code is gone", async () => {
+    const { repo, tokens } = setup();
+    const started = await startDeviceFlow(repo, { name: "VM" }, ORIGIN);
+    await approveDeviceFlow(repo, "user-1", started.user_code, SECRET);
+
+    const token = await poll(repo, started.device_code);
+    expect(token).toMatchObject({ token_type: "bearer", scope: "api:full" });
+    expect(token.access_token).toMatch(/^ck_[0-9a-f]{64}$/);
+    expect(tokens[0]).toMatchObject({ userId: "user-1", scopes: "api:full" });
+    expect(await authenticateMcpToken(repo, token.access_token)).toMatchObject({
+      userId: "user-1",
+      scopes: ["api:full"],
+    });
+
+    await expect(poll(repo, started.device_code)).rejects.toMatchObject({
+      code: "expired_token",
+    });
+  });
+
+  it("rejects unknown codes, expired codes and a wrong grant type", async () => {
     const { fake, repo } = setup();
-    const started = await startCliAuth(repo, START, ORIGIN);
-    expect(await pollCliAuth(repo, started.deviceCode)).toEqual({
-      status: "pending",
+    await expect(poll(repo, "missing")).rejects.toMatchObject({
+      code: "expired_token",
     });
 
-    await approveCliAuth(repo, "user-1", started.userCode);
-    expect(await pollCliAuth(repo, started.deviceCode)).toEqual({
-      status: "approved",
+    const { device_code } = await startDeviceFlow(repo, { name: "VM" }, ORIGIN);
+    await expect(poll(repo, device_code, "password")).rejects.toMatchObject({
+      code: "unsupported_grant_type",
     });
 
-    expect(await pollCliAuth(repo, "missing")).toEqual({ status: "expired" });
-
-    const second = await startCliAuth(repo, START, ORIGIN);
-    const row = fake.state.deviceCodes.find(
-      (item) => item.id === second.deviceCode,
-    );
-    if (row) row.expiresAt = "2020-01-01T00:00:00.000Z";
-    expect(await pollCliAuth(repo, second.deviceCode)).toEqual({
-      status: "expired",
+    const row = fake.state.deviceCodes[0];
+    row.expiresAt = ONE_DAY_AGO;
+    await expect(poll(repo, device_code)).rejects.toMatchObject({
+      code: "expired_token",
     });
+  });
+
+  it("does not hand the token to a poll made with another secret", async () => {
+    const { repo } = setup();
+    const started = await startDeviceFlow(repo, { name: "VM" }, ORIGIN);
+    await approveDeviceFlow(repo, "user-1", started.user_code, SECRET);
+    await expect(
+      pollDeviceFlow(
+        repo,
+        { device_code: started.device_code, grant_type: DEVICE_GRANT_TYPE },
+        "another-secret",
+      ),
+    ).rejects.toThrow();
   });
 });
 
-describe("approveCliAuth", () => {
-  it("creates an api:full token with the hash the CLI sent", async () => {
-    const { repo, tokens } = setup();
-    const started = await startCliAuth(repo, START, ORIGIN);
-
-    const approved = await approveCliAuth(
+describe("approveDeviceFlow", () => {
+  it("accepts a code typed in lower case without the dash", async () => {
+    const { repo } = setup();
+    const started = await startDeviceFlow(repo, { name: "VM" }, ORIGIN);
+    const approved = await approveDeviceFlow(
       repo,
       "user-1",
-      started.userCode.toLowerCase().replace("-", " "),
+      started.user_code.toLowerCase().replace("-", " "),
+      SECRET,
     );
+    expect(approved).toEqual({ name: "VM" });
+  });
 
-    expect(approved).toEqual({ name: "May ban" });
-    expect(tokens).toHaveLength(1);
-    expect(tokens[0]).toMatchObject({
-      userId: "user-1",
-      name: "May ban",
-      tokenHash: START.tokenHash,
-      tokenPrefix: START.tokenPrefix,
-      scopes: "api:full",
-      expiresAt: null,
-    });
+  it("stores the token encrypted, never in clear", async () => {
+    const { fake, repo } = setup();
+    const started = await startDeviceFlow(repo, { name: "VM" }, ORIGIN);
+    await approveDeviceFlow(repo, "user-1", started.user_code, SECRET);
+    const stored = fake.state.deviceCodes[0].encryptedToken ?? "";
+    expect(stored).not.toBe("");
+    expect(stored).not.toContain("ck_");
   });
 
   it("rejects unknown codes, expired codes and a second approval", async () => {
     const { fake, repo, tokens } = setup();
-    await expect(approveCliAuth(repo, "user-1", "NOPE-NOPE")).rejects.toThrow(
-      NotFoundError,
-    );
-
-    const expired = await startCliAuth(repo, START, ORIGIN);
-    const row = fake.state.deviceCodes.find(
-      (item) => item.id === expired.deviceCode,
-    );
-    if (row) row.expiresAt = "2020-01-01T00:00:00.000Z";
     await expect(
-      approveCliAuth(repo, "user-1", expired.userCode),
+      approveDeviceFlow(repo, "user-1", "NOPE-NOPE", SECRET),
     ).rejects.toThrow(NotFoundError);
 
-    const started = await startCliAuth(repo, START, ORIGIN);
-    await approveCliAuth(repo, "user-1", started.userCode);
+    const expired = await startDeviceFlow(repo, { name: "VM" }, ORIGIN);
+    fake.state.deviceCodes[0].expiresAt = ONE_DAY_AGO;
     await expect(
-      approveCliAuth(repo, "user-2", started.userCode),
+      approveDeviceFlow(repo, "user-1", expired.user_code, SECRET),
+    ).rejects.toThrow(NotFoundError);
+
+    const started = await startDeviceFlow(repo, { name: "VM" }, ORIGIN);
+    await approveDeviceFlow(repo, "user-1", started.user_code, SECRET);
+    await expect(
+      approveDeviceFlow(repo, "user-2", started.user_code, SECRET),
     ).rejects.toThrow(BadRequestError);
     expect(tokens).toHaveLength(1);
   });
 
-  it("does not make a token when the code is taken by a parallel approval", async () => {
+  it("revokes the new token when a parallel approval wins", async () => {
     const { repo, tokens } = setup();
-    const started = await startCliAuth(repo, START, ORIGIN);
+    const started = await startDeviceFlow(repo, { name: "VM" }, ORIGIN);
     repo.deviceCodes.approve = async () => false;
     await expect(
-      approveCliAuth(repo, "user-1", started.userCode),
+      approveDeviceFlow(repo, "user-1", started.user_code, SECRET),
     ).rejects.toThrow(BadRequestError);
-    expect(tokens).toHaveLength(0);
+    expect(tokens).toHaveLength(1);
+    expect(tokens[0].revokedAt).not.toBeNull();
   });
 });

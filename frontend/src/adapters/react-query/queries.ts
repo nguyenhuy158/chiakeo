@@ -706,9 +706,10 @@ export function useCreateMcpToken() {
   });
 }
 
-export function useApproveCliAuth() {
+export function useApproveDeviceLogin() {
   return useMutation({
-    mutationFn: (userCode: string) => getGameApi().cliAuth.approve(userCode),
+    mutationFn: (userCode: string) =>
+      getGameApi().deviceLogin.approve(userCode),
   });
 }
 

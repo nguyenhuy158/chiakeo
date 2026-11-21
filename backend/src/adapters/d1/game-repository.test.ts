@@ -256,13 +256,13 @@ describe("D1 game repository", () => {
     const row = {
       id: "device-d1",
       userCode: "ABCD-2345",
-      tokenHash: "hash-device",
-      tokenPrefix: "ck_abcdef",
       name: "May ban",
       createdAt: "2026-07-01T00:00:00.000Z",
       expiresAt: "2026-07-01T00:10:00.000Z",
       userId: null,
       approvedAt: null,
+      encryptedToken: null,
+      lastPolledAt: null,
     };
     expect(await repo.deviceCodes.findById(row.id)).toBeNull();
     expect(await repo.deviceCodes.findByUserCode(row.userCode)).toBeNull();
@@ -273,10 +273,15 @@ describe("D1 game repository", () => {
     expect((await repo.deviceCodes.findByUserCode(row.userCode))?.id).toBe(
       row.id,
     );
+    await repo.deviceCodes.markPolled(row.id, "2026-07-01T00:01:00.000Z");
+    expect((await repo.deviceCodes.findById(row.id))?.lastPolledAt).toBe(
+      "2026-07-01T00:01:00.000Z",
+    );
     expect(
       await repo.deviceCodes.approve(
         row.id,
         "owner",
+        "cipher",
         "2026-07-01T00:20:00.000Z",
       ),
     ).toBe(false);
@@ -284,6 +289,7 @@ describe("D1 game repository", () => {
       await repo.deviceCodes.approve(
         row.id,
         "owner",
+        "cipher",
         "2026-07-01T00:05:00.000Z",
       ),
     ).toBe(true);
@@ -291,13 +297,21 @@ describe("D1 game repository", () => {
       await repo.deviceCodes.approve(
         row.id,
         "friend",
+        "other",
         "2026-07-01T00:06:00.000Z",
       ),
     ).toBe(false);
-    expect((await repo.deviceCodes.findById(row.id))?.userId).toBe("owner");
+    const approved = await repo.deviceCodes.findById(row.id);
+    expect(approved).toMatchObject({
+      userId: "owner",
+      encryptedToken: "cipher",
+    });
     await repo.deviceCodes.deleteExpired("2026-07-01T00:05:00.000Z");
     expect(await repo.deviceCodes.findById(row.id)).not.toBeNull();
     await repo.deviceCodes.deleteExpired("2026-07-01T00:10:00.000Z");
+    expect(await repo.deviceCodes.findById(row.id)).toBeNull();
+    await repo.deviceCodes.insert({ ...row, userCode: "WXYZ-6789" });
+    await repo.deviceCodes.delete(row.id);
     expect(await repo.deviceCodes.findById(row.id)).toBeNull();
   });
 

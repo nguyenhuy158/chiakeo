@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-import { createHash, randomBytes } from "node:crypto";
 import { chmod, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { homedir, hostname } from "node:os";
 import { dirname, join } from "node:path";
@@ -9,10 +8,11 @@ const DEFAULT_URL = "https://chiakeo.huyab.cfd";
 const CONFIG_PATH =
   process.env.CHIAKEO_CONFIG ||
   join(homedir(), ".config", "chiakeo", "config.json");
-const TOKEN_BYTES = 32;
-const TOKEN_PREFIX_LENGTH = 9;
 const DEVICE_NAME_MAX_LENGTH = 60;
 const CONFIG_FILE_MODE = 0o600;
+const DEVICE_GRANT_TYPE = "urn:ietf:params:oauth:grant-type:device_code";
+const SLOW_DOWN_SECONDS = 5;
+const MILLISECONDS_PER_SECOND = 1000;
 const AMOUNT_UNITS = { k: 1_000, m: 1_000_000 };
 const AMOUNT_PATTERN = /^(\d+(?:[.,]\d+)?)([km])?$/i;
 
@@ -93,36 +93,47 @@ async function authed(method, path, body) {
   return request(url, method, path, body, token);
 }
 
+async function pollToken(baseUrl, deviceCode) {
+  const response = await fetch(`${baseUrl}/api/login/oauth/access_token`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      device_code: deviceCode,
+      grant_type: DEVICE_GRANT_TYPE,
+    }),
+  });
+  return { ok: response.ok, data: await response.json().catch(() => ({})) };
+}
+
 async function up({ flags }) {
   const url = (flags.url || DEFAULT_URL).replace(/\/$/, "");
-  const secret = `ck_${randomBytes(TOKEN_BYTES).toString("hex")}`;
-  const start = await request(url, "POST", "/api/cli-auth/start", {
-    tokenHash: createHash("sha256").update(secret).digest("hex"),
-    tokenPrefix: secret.slice(0, TOKEN_PREFIX_LENGTH),
+  const start = await request(url, "POST", "/api/login/device/code", {
     name: (flags.name || hostname()).slice(0, DEVICE_NAME_MAX_LENGTH),
   });
 
   console.log(`Open this link in your browser (sign in if asked):
-  ${start.verificationUrl}?code=${start.userCode}
-Or open ${start.verificationUrl} and type this code: ${start.userCode}
+  ${start.verification_uri_complete}
+Or open ${start.verification_uri} and type this code: ${start.user_code}
 Waiting for approval...`);
 
-  const deadline = Date.now() + start.expiresInSeconds * 1000;
+  const deadline = Date.now() + start.expires_in * MILLISECONDS_PER_SECOND;
+  let intervalSeconds = start.interval;
   while (Date.now() < deadline) {
-    await sleep(start.intervalSeconds * 1000);
-    const { status } = await request(url, "POST", "/api/cli-auth/poll", {
-      deviceCode: start.deviceCode,
-    });
-    if (status === "approved") {
+    await sleep(intervalSeconds * MILLISECONDS_PER_SECOND);
+    const { ok, data } = await pollToken(url, start.device_code);
+    if (ok) {
       await mkdir(dirname(CONFIG_PATH), { recursive: true });
-      await writeFile(CONFIG_PATH, JSON.stringify({ url, token: secret }), {
-        mode: CONFIG_FILE_MODE,
-      });
+      await writeFile(
+        CONFIG_PATH,
+        JSON.stringify({ url, token: data.access_token }),
+        { mode: CONFIG_FILE_MODE },
+      );
       await chmod(CONFIG_PATH, CONFIG_FILE_MODE);
       console.log("Signed in.");
       return;
     }
-    if (status === "expired") break;
+    if (data.error === "slow_down") intervalSeconds += SLOW_DOWN_SECONDS;
+    else if (data.error !== "authorization_pending") break;
   }
   throw new CliError("The code has expired. Run again: chiakeo up");
 }

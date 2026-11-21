@@ -145,8 +145,9 @@ export function createHttpGameApi(): GameApiPort {
       create: (input) => post(`/api/mcp-tokens`, input),
       revoke: (tokenId) => destroy(`/api/mcp-tokens/${tokenId}`),
     },
-    cliAuth: {
-      approve: (userCode) => post(`/api/cli-auth/approve`, { userCode }),
+    deviceLogin: {
+      approve: (userCode) =>
+        post(`/api/login/device/approve`, { user_code: userCode }),
     },
     ai: {
       suggestExpense: (gameId, text) =>
