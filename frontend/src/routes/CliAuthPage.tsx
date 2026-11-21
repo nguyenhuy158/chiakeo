@@ -1,7 +1,17 @@
+import { Link } from "@tanstack/react-router";
 import { Check, Terminal } from "lucide-react";
 import { useState } from "react";
+import { ssoLoginUrl } from "../adapters/browser/sso";
 import { useApproveCliAuth } from "../adapters/react-query/queries";
-import { Field } from "../components/ui";
+import { useAppSession } from "../adapters/react-query/session-query";
+import { BrandMark } from "../components/brand";
+import { ThemeToggle } from "../components/theme";
+import { LoadingState } from "../components/ui";
+import { Alert } from "../ui/Alert";
+import { Button } from "../ui/Button";
+import { Card } from "../ui/Card";
+import { Field } from "../ui/Field";
+import { Input } from "../ui/Input";
 
 const ERROR_MESSAGE: Record<string, string> = {
   not_found:
@@ -12,26 +22,98 @@ const ERROR_MESSAGE: Record<string, string> = {
 };
 const FALLBACK_ERROR = "Không duyệt được, thử lại sau.";
 const CODE_PARAM = "code";
+const CODE_LENGTH = 8;
+const CODE_GROUP = CODE_LENGTH / 2;
 
-/** Trang nguoi dung go ma hien tren CLI de cho phep may do dang nhap. */
-export function CliAuthPage() {
-  const approve = useApproveCliAuth();
-  const [code, setCode] = useState(
-    () => new URLSearchParams(window.location.search).get(CODE_PARAM) ?? "",
+/** Giu chu va so viet hoa, toi da 8 ky tu, chen dau gach giua: ABCD-2345. */
+function formatCode(raw: string) {
+  const compact = raw
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, "")
+    .slice(0, CODE_LENGTH);
+  return compact.length > CODE_GROUP
+    ? `${compact.slice(0, CODE_GROUP)}-${compact.slice(CODE_GROUP)}`
+    : compact;
+}
+
+function Frame({ children }: { children: React.ReactNode }) {
+  return (
+    <section className="mx-auto flex min-h-dvh w-full max-w-md items-center px-5">
+      <Card className="w-full p-6">
+        <div className="mb-6 flex items-start justify-between gap-3">
+          <BrandMark size={56} />
+          <ThemeToggle />
+        </div>
+        {children}
+      </Card>
+    </section>
   );
+}
+
+/**
+ * Trang rieng (khong nam trong khung app) de cho phep may chay `chiakeo up`,
+ * giong trang device cua GitHub: mot the o giua, ma lon, hai nut.
+ */
+export function CliAuthPage() {
+  const { user, isPending } = useAppSession();
+  const approve = useApproveCliAuth();
+  const [code, setCode] = useState(() =>
+    formatCode(
+      new URLSearchParams(window.location.search).get(CODE_PARAM) ?? "",
+    ),
+  );
+
+  if (isPending) {
+    return (
+      <section className="mx-auto flex min-h-dvh w-full max-w-md items-center px-5">
+        <div className="w-full">
+          <LoadingState />
+        </div>
+      </section>
+    );
+  }
+
+  if (!user) {
+    return (
+      <Frame>
+        <h1 className="text-2xl font-semibold text-fg">Cho phép CLI</h1>
+        <p className="mt-2 text-sm text-fg-muted">
+          Đăng nhập để cho phép máy đang chạy <code>chiakeo up</code> truy cập
+          kèo của bạn.
+        </p>
+        <Button
+          block
+          className="mt-6"
+          onClick={() => {
+            window.location.href = ssoLoginUrl(
+              `/cli-auth${window.location.search}`,
+            );
+          }}
+        >
+          Tiếp tục với Google
+        </Button>
+      </Frame>
+    );
+  }
 
   if (approve.isSuccess) {
     return (
-      <div className="mx-auto max-w-md px-4 py-10 text-center">
-        <Check size={40} className="mx-auto text-emerald-600" />
-        <h1 className="mt-3 text-xl font-bold text-stone-950 dark:text-stone-50">
-          Đã cho phép
-        </h1>
-        <p className="mt-2 text-sm text-fg-muted">
-          "{approve.data.name}" đã đăng nhập. Quay lại terminal, không cần làm
-          gì thêm. Thu hồi bất cứ lúc nào trong Cài đặt.
-        </p>
-      </div>
+      <Frame>
+        <Alert
+          tone="success"
+          icon={<Check size={18} />}
+          title={`Đã cho phép "${approve.data.name}"`}
+        >
+          Quay lại terminal, không cần làm gì thêm. Thu hồi bất cứ lúc nào trong
+          Cài đặt.
+        </Alert>
+        <Link
+          to="/"
+          className="mt-4 block text-center text-sm font-medium text-primary underline-offset-4 hover:underline"
+        >
+          Về trang chủ
+        </Link>
+      </Frame>
     );
   }
 
@@ -40,40 +122,53 @@ export function CliAuthPage() {
     : "";
 
   return (
-    <form
-      onSubmit={(event) => {
-        event.preventDefault();
-        approve.mutate(code);
-      }}
-      className="mx-auto max-w-md space-y-4 px-4 py-10"
-    >
-      <div className="flex items-center gap-2">
-        <Terminal size={20} />
-        <h1 className="text-xl font-bold text-stone-950 dark:text-stone-50">
+    <Frame>
+      <form
+        onSubmit={(event) => {
+          event.preventDefault();
+          approve.mutate(code);
+        }}
+      >
+        <h1 className="flex items-center gap-2 text-2xl font-semibold text-fg">
+          <Terminal size={22} />
           Cho phép CLI
         </h1>
-      </div>
-      <p className="text-sm text-fg-muted">
-        Nhập mã hiện trên terminal sau khi chạy <code>chiakeo up</code>. Máy đó
-        sẽ đọc và ghi kèo như bạn.
-      </p>
-      <Field label="Mã trên terminal" error={errorMessage}>
-        <input
-          value={code}
-          onChange={(event) => setCode(event.target.value)}
-          className="field tabular uppercase"
-          placeholder="ABCD-2345"
-          autoComplete="off"
-          autoCapitalize="characters"
-        />
-      </Field>
-      <button
-        type="submit"
-        disabled={!code.trim() || approve.isPending}
-        className="inline-flex h-11 w-full items-center justify-center rounded-md bg-primary px-4 text-sm font-semibold text-white transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:bg-stone-300 dark:disabled:bg-stone-700"
-      >
-        {approve.isPending ? "Đang duyệt..." : "Cho phép"}
-      </button>
-    </form>
+        <p className="mt-2 text-sm text-fg-muted">
+          Bạn đang đăng nhập là <strong className="text-fg">{user.name}</strong>
+          . Máy hiện mã này sẽ đọc và ghi kèo như bạn.
+        </p>
+        <Field
+          className="mt-6"
+          label="Mã trên terminal"
+          error={errorMessage || undefined}
+        >
+          <Input
+            value={code}
+            onChange={(event) => setCode(formatCode(event.target.value))}
+            placeholder="ABCD-2345"
+            autoComplete="off"
+            autoCapitalize="characters"
+            spellCheck={false}
+            className="h-14 text-center font-mono text-2xl tracking-[0.3em] sm:h-14"
+          />
+        </Field>
+        <div className="mt-6 flex flex-col gap-2">
+          <Button
+            block
+            type="submit"
+            loading={approve.isPending}
+            disabled={code.length !== CODE_LENGTH + 1}
+          >
+            Cho phép
+          </Button>
+          <Link
+            to="/"
+            className="text-center text-sm font-medium text-fg-muted underline-offset-4 hover:underline"
+          >
+            Hủy
+          </Link>
+        </div>
+      </form>
+    </Frame>
   );
 }

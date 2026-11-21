@@ -16,8 +16,9 @@ function appOrigin() {
   return current.endsWith(".huyab.cfd") ? current : SSO_APP_ORIGIN;
 }
 
-export function ssoLoginUrl() {
-  return `${SSO_ISSUER}/login?redirect_uri=${encodeURIComponent(`${appOrigin()}/`)}`;
+/** `returnPath` la duong dan trong app de quay lai sau khi dang nhap (mac dinh la trang chu). */
+export function ssoLoginUrl(returnPath = "/") {
+  return `${SSO_ISSUER}/login?redirect_uri=${encodeURIComponent(`${appOrigin()}${returnPath}`)}`;
 }
 
 export function ssoLogoutUrl() {
