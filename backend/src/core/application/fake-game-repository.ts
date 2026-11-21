@@ -313,10 +313,20 @@ export function createFakeRepo(initial: Partial<FakeState> = {}) {
         state.deviceCodes.find((row) => row.userCode === userCode) || null,
       approve: async (id, userId, encryptedToken, now) => {
         const row = state.deviceCodes.find((item) => item.id === id);
-        if (!row || row.userId || row.expiresAt <= now) return false;
+        if (!row || row.userId || row.deniedAt || row.expiresAt <= now) {
+          return false;
+        }
         row.userId = userId;
         row.encryptedToken = encryptedToken;
         row.approvedAt = now;
+        return true;
+      },
+      deny: async (id, now) => {
+        const row = state.deviceCodes.find((item) => item.id === id);
+        if (!row || row.userId || row.deniedAt || row.expiresAt <= now) {
+          return false;
+        }
+        row.deniedAt = now;
         return true;
       },
       markPolled: async (id, now) => {

@@ -1,6 +1,8 @@
 import type {
   ApiDeviceApproved,
   ApiDeviceCode,
+  ApiDeviceDenied,
+  ApiDeviceLookup,
   ApiDeviceToken,
 } from "../../../../shared/api-types";
 import {
@@ -108,14 +110,13 @@ export async function startDeviceFlow(
     approvedAt: null,
     encryptedToken: null,
     lastPolledAt: null,
+    deniedAt: null,
   });
 
-  const verificationUri = `${origin}/login/device`;
   return {
     device_code: deviceCode,
     user_code: userCode,
-    verification_uri: verificationUri,
-    verification_uri_complete: `${verificationUri}?user_code=${userCode}`,
+    verification_uri: `${origin}/login/device`,
     expires_in: DEVICE_CODE_TTL_SECONDS,
     interval: POLL_INTERVAL_SECONDS,
   };
@@ -139,6 +140,11 @@ export async function pollDeviceFlow(
   const row = await repo.deviceCodes.findById(id);
   if (!row || row.expiresAt <= now) throw new BadRequestError("expired_token");
 
+  if (row.deniedAt) {
+    await repo.deviceCodes.delete(id);
+    throw new BadRequestError("access_denied");
+  }
+
   if (row.encryptedToken) {
     const token = await decryptToken(encryptionSecret, row.encryptedToken);
     await repo.deviceCodes.delete(id);
@@ -151,6 +157,36 @@ export async function pollDeviceFlow(
       POLL_INTERVAL_SECONDS * MILLISECONDS_PER_SECOND;
   await repo.deviceCodes.markPolled(id, now);
   throw new BadRequestError(tooFast ? "slow_down" : "authorization_pending");
+}
+
+async function findOpenRequest(repo: GameRepository, userCode: string) {
+  const row = await repo.deviceCodes.findByUserCode(
+    normalizeUserCode(userCode),
+  );
+  if (!row || row.expiresAt <= nowIso()) throw new NotFoundError();
+  if (row.userId || row.deniedAt)
+    throw new BadRequestError("code_already_used");
+  return row;
+}
+
+/** Buoc xac nhan: cho nguoi dung thay ten may dang xin quyen truoc khi duyet. */
+export async function lookupDeviceFlow(
+  repo: GameRepository,
+  userCode: string,
+): Promise<ApiDeviceLookup> {
+  const row = await findOpenRequest(repo, userCode);
+  return { name: row.name, user_code: row.userCode };
+}
+
+export async function denyDeviceFlow(
+  repo: GameRepository,
+  userCode: string,
+): Promise<ApiDeviceDenied> {
+  const row = await findOpenRequest(repo, userCode);
+  if (!(await repo.deviceCodes.deny(row.id, nowIso()))) {
+    throw new BadRequestError("code_already_used");
+  }
+  return { name: row.name };
 }
 
 /**

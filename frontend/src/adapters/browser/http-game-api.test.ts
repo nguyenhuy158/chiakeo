@@ -200,6 +200,18 @@ describe("HTTP Game API", () => {
     ["DELETE", "/api/mcp-tokens/t", () => api.mcpTokens.revoke("t")],
     [
       "POST",
+      "/api/login/device/lookup",
+      () => api.deviceLogin.lookup("ABCD-2345"),
+      '{"user_code":"ABCD-2345"}',
+    ],
+    [
+      "POST",
+      "/api/login/device/deny",
+      () => api.deviceLogin.deny("ABCD-2345"),
+      '{"user_code":"ABCD-2345"}',
+    ],
+    [
+      "POST",
       "/api/login/device/approve",
       () => api.deviceLogin.approve("ABCD-2345"),
       '{"user_code":"ABCD-2345"}',

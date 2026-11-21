@@ -601,6 +601,22 @@ export function createGameRepository(db: Db): GameRepository {
             and(
               eq(schema.deviceCodes.id, id),
               isNull(schema.deviceCodes.userId),
+              isNull(schema.deviceCodes.deniedAt),
+              gt(schema.deviceCodes.expiresAt, now),
+            ),
+          )
+          .returning({ id: schema.deviceCodes.id });
+        return rows.length > 0;
+      },
+      async deny(id, now) {
+        const rows = await db
+          .update(schema.deviceCodes)
+          .set({ deniedAt: now })
+          .where(
+            and(
+              eq(schema.deviceCodes.id, id),
+              isNull(schema.deviceCodes.userId),
+              isNull(schema.deviceCodes.deniedAt),
               gt(schema.deviceCodes.expiresAt, now),
             ),
           )

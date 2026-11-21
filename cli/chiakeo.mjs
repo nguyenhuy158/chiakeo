@@ -112,8 +112,8 @@ async function up({ flags }) {
   });
 
   console.log(`Open this link in your browser (sign in if asked):
-  ${start.verification_uri_complete}
-Or open ${start.verification_uri} and type this code: ${start.user_code}
+  ${start.verification_uri}
+Then type this code: ${start.user_code}
 Waiting for approval...`);
 
   const deadline = Date.now() + start.expires_in * MILLISECONDS_PER_SECOND;
@@ -133,7 +133,9 @@ Waiting for approval...`);
       return;
     }
     if (data.error === "slow_down") intervalSeconds += SLOW_DOWN_SECONDS;
-    else if (data.error !== "authorization_pending") break;
+    else if (data.error === "access_denied") {
+      throw new CliError("Sign in was denied in the browser.");
+    } else if (data.error !== "authorization_pending") break;
   }
   throw new CliError("The code has expired. Run again: chiakeo up");
 }

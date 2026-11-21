@@ -325,7 +325,11 @@ things reading the code does not show right away.
   rồi xóa dòng; bảng chỉ giữ SHA-256 của `device_code`. Token này gọi được REST
   như người dùng nhưng KHÔNG gọi được `/api/mcp-tokens` (`requireSessionUser`) —
   đổi sang `requireUser` là token CLI tự đẻ ra token. `/login/device` là route
-  cấp root, không nằm trong `AppLayout`. Đổi `BETTER_AUTH_SECRET` thì mã đang
+  cấp root, không nằm trong `AppLayout`. Trang có HAI bước (gõ mã → xác nhận
+  tên máy, nút Cho phép / Từ chối) và KHÔNG điền sẵn mã từ URL; API không trả
+  `verification_uri_complete`, CLI chỉ in link gốc + mã. Bỏ hai điều này là một
+  đường link đủ để lừa người dùng cấp token cho máy của kẻ xấu (RFC 8628 mục
+  3.3, 5.4). Từ chối → CLI nhận `access_denied`. Đổi `BETTER_AUTH_SECRET` thì mã đang
   chờ lấy token hỏng (sống tối đa 10 phút).
 - **Prod chạy Turso, không phải D1**: worker có secret `TURSO_DATABASE_URL` nên
   migration prod là `pnpm db:migrate:remote` (drizzle-kit, cần `TURSO_*`);

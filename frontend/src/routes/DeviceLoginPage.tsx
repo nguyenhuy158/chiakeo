@@ -1,8 +1,12 @@
 import { Link } from "@tanstack/react-router";
-import { Check, Terminal } from "lucide-react";
+import { Check, Terminal, X } from "lucide-react";
 import { useState } from "react";
 import { ssoLoginUrl } from "../adapters/browser/sso";
-import { useApproveDeviceLogin } from "../adapters/react-query/queries";
+import {
+  useApproveDeviceLogin,
+  useDenyDeviceLogin,
+  useLookupDeviceLogin,
+} from "../adapters/react-query/queries";
 import { useAppSession } from "../adapters/react-query/session-query";
 import { BrandMark } from "../components/brand";
 import { ThemeToggle } from "../components/theme";
@@ -16,15 +20,14 @@ import { Input } from "../ui/Input";
 const ERROR_MESSAGE: Record<string, string> = {
   not_found:
     "Mã không đúng hoặc đã hết hạn. Chạy lại lệnh trên máy để lấy mã mới.",
-  code_already_used: "Mã này đã được dùng rồi.",
+  code_already_used: "Mã này đã được duyệt hoặc đã bị từ chối rồi.",
   too_many_mcp_tokens: "Đã đủ số token. Thu hồi bớt trong Cài đặt rồi thử lại.",
   rate_limited: "Thử quá nhanh, chờ một phút rồi thử lại.",
 };
 const FALLBACK_ERROR = "Không duyệt được, thử lại sau.";
-const CODE_PARAM = "user_code";
 const CODE_LENGTH = 8;
 const CODE_GROUP = CODE_LENGTH / 2;
-const CODE_HINT = "Nhập đủ 8 ký tự để bật nút Cho phép.";
+const CODE_HINT = "Nhập đủ 8 ký tự để bật nút Tiếp tục.";
 
 /** Giu chu va so viet hoa, toi da 8 ky tu, chen dau gach giua: ABCD-2345. */
 function formatCode(raw: string) {
@@ -53,16 +56,16 @@ function Frame({ children }: { children: React.ReactNode }) {
 
 /**
  * Trang rieng (khong nam trong khung app) de cho phep may chay `chiakeo up`,
- * giong trang device cua GitHub: mot the o giua, ma lon, hai nut.
+ * giong trang device cua GitHub, hai buoc: go ma, roi xac nhan ten may.
+ * Khong dien san ma tu URL: neu khong, mot duong link la du de lua nguoi dung
+ * cap quyen cho may cua ke xau (RFC 8628, muc 3.3 va 5.4).
  */
 export function DeviceLoginPage() {
   const { user, isPending } = useAppSession();
+  const lookup = useLookupDeviceLogin();
   const approve = useApproveDeviceLogin();
-  const [code, setCode] = useState(() =>
-    formatCode(
-      new URLSearchParams(window.location.search).get(CODE_PARAM) ?? "",
-    ),
-  );
+  const deny = useDenyDeviceLogin();
+  const [code, setCode] = useState("");
 
   if (isPending) {
     return (
@@ -86,9 +89,7 @@ export function DeviceLoginPage() {
           block
           className="mt-6"
           onClick={() => {
-            window.location.href = ssoLoginUrl(
-              `/login/device${window.location.search}`,
-            );
+            window.location.href = ssoLoginUrl("/login/device");
           }}
         >
           Tiếp tục với Google
@@ -108,18 +109,87 @@ export function DeviceLoginPage() {
           Quay lại terminal, không cần làm gì thêm. Thu hồi bất cứ lúc nào trong
           Cài đặt.
         </Alert>
-        <Link
-          to="/"
-          className="mt-4 block text-center text-sm font-medium text-primary underline-offset-4 hover:underline"
-        >
-          Về trang chủ
-        </Link>
+        <HomeLink />
       </Frame>
     );
   }
 
-  const errorMessage = approve.error
-    ? ERROR_MESSAGE[approve.error.message] || FALLBACK_ERROR
+  if (deny.isSuccess) {
+    return (
+      <Frame>
+        <Alert
+          tone="info"
+          icon={<X size={18} />}
+          title={`Đã từ chối "${deny.data.name}"`}
+        >
+          Máy đó không được cấp quyền. Nếu không phải bạn vừa chạy lệnh, không
+          cần làm gì thêm.
+        </Alert>
+        <HomeLink />
+      </Frame>
+    );
+  }
+
+  if (lookup.isSuccess) {
+    const device = lookup.data;
+    const decisionError = approve.error ?? deny.error;
+    return (
+      <Frame>
+        <h1 className="flex items-center gap-2 text-2xl font-semibold text-fg">
+          <Terminal size={22} />
+          Cho phép "{device.name}"?
+        </h1>
+        <p className="mt-2 text-sm text-fg-muted">
+          Máy này sẽ đọc và ghi kèo như{" "}
+          <strong className="text-fg">{user.name}</strong>. Chỉ cho phép nếu
+          chính bạn vừa chạy <code>chiakeo up</code> và mã dưới đây đang hiện
+          trên terminal.
+        </p>
+        <p className="mt-4 rounded-ui border border-border bg-surface-muted py-3 text-center font-mono text-2xl tracking-[0.3em] text-fg">
+          {device.user_code}
+        </p>
+        {decisionError && (
+          <Alert tone="danger" className="mt-4">
+            {ERROR_MESSAGE[decisionError.message] || FALLBACK_ERROR}
+          </Alert>
+        )}
+        <div className="mt-6 flex flex-col gap-2">
+          <Button
+            block
+            loading={approve.isPending}
+            disabled={deny.isPending}
+            onClick={() => approve.mutate(device.user_code)}
+          >
+            Cho phép
+          </Button>
+          <Button
+            block
+            variant="outline"
+            loading={deny.isPending}
+            disabled={approve.isPending}
+            onClick={() => deny.mutate(device.user_code)}
+          >
+            Từ chối
+          </Button>
+          <Button
+            block
+            variant="ghost"
+            onClick={() => {
+              lookup.reset();
+              approve.reset();
+              deny.reset();
+              setCode("");
+            }}
+          >
+            Nhập mã khác
+          </Button>
+        </div>
+      </Frame>
+    );
+  }
+
+  const errorMessage = lookup.error
+    ? ERROR_MESSAGE[lookup.error.message] || FALLBACK_ERROR
     : "";
 
   return (
@@ -127,7 +197,7 @@ export function DeviceLoginPage() {
       <form
         onSubmit={(event) => {
           event.preventDefault();
-          approve.mutate(code);
+          lookup.mutate(code);
         }}
       >
         <h1 className="flex items-center gap-2 text-2xl font-semibold text-fg">
@@ -136,7 +206,8 @@ export function DeviceLoginPage() {
         </h1>
         <p className="mt-2 text-sm text-fg-muted">
           Bạn đang đăng nhập là <strong className="text-fg">{user.name}</strong>
-          . Máy hiện mã này sẽ đọc và ghi kèo như bạn.
+          . Nhập mã đang hiện trên terminal sau khi chạy <code>chiakeo up</code>
+          .
         </p>
         <Field
           className="mt-6"
@@ -158,10 +229,10 @@ export function DeviceLoginPage() {
           <Button
             block
             type="submit"
-            loading={approve.isPending}
+            loading={lookup.isPending}
             disabled={code.length !== CODE_LENGTH + 1}
           >
-            Cho phép
+            Tiếp tục
           </Button>
           <Link
             to="/"
@@ -172,5 +243,16 @@ export function DeviceLoginPage() {
         </div>
       </form>
     </Frame>
+  );
+}
+
+function HomeLink() {
+  return (
+    <Link
+      to="/"
+      className="mt-4 block text-center text-sm font-medium text-primary underline-offset-4 hover:underline"
+    >
+      Về trang chủ
+    </Link>
   );
 }

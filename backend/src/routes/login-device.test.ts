@@ -70,6 +70,14 @@ describe("login device routes", () => {
     expect(pending.status).toBe(400);
     expect(await pending.json()).toEqual({ error: "authorization_pending" });
 
+    const looked = await post("/login/device/lookup", {
+      user_code: flow.user_code,
+    });
+    expect(await looked.json()).toEqual({
+      name: "VM",
+      user_code: flow.user_code,
+    });
+
     const approved = await post("/login/device/approve", {
       user_code: flow.user_code,
     });
@@ -80,6 +88,24 @@ describe("login device routes", () => {
     expect(((await done.json()) as ApiDeviceToken).access_token).toMatch(
       /^ck_/,
     );
+  });
+
+  it("lets the user deny and the CLI gets access_denied", async () => {
+    const flow = (await (
+      await post("/login/device/code", { name: "VM" })
+    ).json()) as ApiDeviceCode;
+
+    const denied = await post("/login/device/deny", {
+      user_code: flow.user_code,
+    });
+    expect(await denied.json()).toEqual({ name: "VM" });
+
+    const polled = await post("/login/oauth/access_token", {
+      device_code: flow.device_code,
+      grant_type: DEVICE_GRANT_TYPE,
+    });
+    expect(polled.status).toBe(400);
+    expect(await polled.json()).toEqual({ error: "access_denied" });
   });
 
   it("accepts form-urlencoded bodies like GitHub does", async () => {
@@ -123,6 +149,14 @@ describe("login device routes", () => {
       ).json(),
     ).toEqual({ error: "unsupported_grant_type" });
     expect((await post("/login/device/approve", {})).status).toBe(400);
+    expect((await post("/login/device/lookup", {})).status).toBe(400);
+    expect((await post("/login/device/deny", {})).status).toBe(400);
+    expect(
+      (await post("/login/device/lookup", { user_code: "NOPE-NOPE" })).status,
+    ).toBe(404);
+    expect(
+      (await post("/login/device/deny", { user_code: "NOPE-NOPE" })).status,
+    ).toBe(404);
     expect(
       (await post("/login/device/approve", { user_code: "NOPE-NOPE" })).status,
     ).toBe(404);

@@ -3,6 +3,8 @@ import { DEVICE_GRANT_TYPE } from "../../../../shared/schemas";
 import type { McpTokenRow } from "../ports/game-repository";
 import {
   approveDeviceFlow,
+  denyDeviceFlow,
+  lookupDeviceFlow,
   pollDeviceFlow,
   startDeviceFlow,
 } from "./device-codes";
@@ -44,9 +46,7 @@ describe("startDeviceFlow", () => {
     expect(started.device_code).toMatch(/^[0-9a-f]{64}$/);
     expect(started.user_code).toMatch(/^[A-Z2-9]{4}-[A-Z2-9]{4}$/);
     expect(started.verification_uri).toBe(`${ORIGIN}/login/device`);
-    expect(started.verification_uri_complete).toBe(
-      `${ORIGIN}/login/device?user_code=${started.user_code}`,
-    );
+    expect(started).not.toHaveProperty("verification_uri_complete");
     expect(started.expires_in).toBe(600);
     expect(started.interval).toBe(5);
     expect(JSON.stringify(fake.state.deviceCodes)).not.toContain(
@@ -66,6 +66,7 @@ describe("startDeviceFlow", () => {
       approvedAt: null,
       encryptedToken: null,
       lastPolledAt: null,
+      deniedAt: null,
     });
     await startDeviceFlow(repo, { name: "VM" }, ORIGIN);
     expect(fake.state.deviceCodes.map((row) => row.id)).not.toContain("old");
@@ -187,5 +188,80 @@ describe("approveDeviceFlow", () => {
     ).rejects.toThrow(BadRequestError);
     expect(tokens).toHaveLength(1);
     expect(tokens[0].revokedAt).not.toBeNull();
+  });
+});
+
+describe("lookupDeviceFlow and denyDeviceFlow", () => {
+  it("shows only the device name and the code before approval", async () => {
+    const { repo } = setup();
+    const started = await startDeviceFlow(repo, { name: "May ban" }, ORIGIN);
+    expect(
+      await lookupDeviceFlow(repo, started.user_code.toLowerCase()),
+    ).toEqual({ name: "May ban", user_code: started.user_code });
+  });
+
+  it("does not look up unknown, expired, approved or denied codes", async () => {
+    const { fake, repo } = setup();
+    await expect(lookupDeviceFlow(repo, "NOPE-NOPE")).rejects.toThrow(
+      NotFoundError,
+    );
+
+    const expired = await startDeviceFlow(repo, { name: "VM" }, ORIGIN);
+    fake.state.deviceCodes[0].expiresAt = ONE_DAY_AGO;
+    await expect(lookupDeviceFlow(repo, expired.user_code)).rejects.toThrow(
+      NotFoundError,
+    );
+
+    const approved = await startDeviceFlow(repo, { name: "VM" }, ORIGIN);
+    await approveDeviceFlow(repo, "user-1", approved.user_code, SECRET);
+    await expect(lookupDeviceFlow(repo, approved.user_code)).rejects.toThrow(
+      BadRequestError,
+    );
+
+    const denied = await startDeviceFlow(repo, { name: "VM" }, ORIGIN);
+    await denyDeviceFlow(repo, denied.user_code);
+    await expect(lookupDeviceFlow(repo, denied.user_code)).rejects.toThrow(
+      BadRequestError,
+    );
+  });
+
+  it("gives access_denied once after the user denies, then the code is gone", async () => {
+    const { repo, tokens } = setup();
+    const started = await startDeviceFlow(repo, { name: "VM" }, ORIGIN);
+    expect(await denyDeviceFlow(repo, started.user_code)).toEqual({
+      name: "VM",
+    });
+
+    await expect(poll(repo, started.device_code)).rejects.toMatchObject({
+      code: "access_denied",
+    });
+    await expect(poll(repo, started.device_code)).rejects.toMatchObject({
+      code: "expired_token",
+    });
+    expect(tokens).toHaveLength(0);
+  });
+
+  it("cannot approve a denied code and cannot deny an approved one", async () => {
+    const { repo } = setup();
+    const denied = await startDeviceFlow(repo, { name: "VM" }, ORIGIN);
+    await denyDeviceFlow(repo, denied.user_code);
+    await expect(
+      approveDeviceFlow(repo, "user-1", denied.user_code, SECRET),
+    ).rejects.toThrow(BadRequestError);
+
+    const approved = await startDeviceFlow(repo, { name: "VM" }, ORIGIN);
+    await approveDeviceFlow(repo, "user-1", approved.user_code, SECRET);
+    await expect(denyDeviceFlow(repo, approved.user_code)).rejects.toThrow(
+      BadRequestError,
+    );
+  });
+
+  it("reports a parallel decision that wins the race", async () => {
+    const { repo } = setup();
+    const started = await startDeviceFlow(repo, { name: "VM" }, ORIGIN);
+    repo.deviceCodes.deny = async () => false;
+    await expect(denyDeviceFlow(repo, started.user_code)).rejects.toThrow(
+      BadRequestError,
+    );
   });
 });

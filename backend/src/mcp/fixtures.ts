@@ -222,6 +222,7 @@ export function fakeRepo(
       findById: unused("deviceCodes.findById"),
       findByUserCode: unused("deviceCodes.findByUserCode"),
       approve: unused("deviceCodes.approve"),
+      deny: unused("deviceCodes.deny"),
       markPolled: unused("deviceCodes.markPolled"),
       delete: unused("deviceCodes.delete"),
       deleteExpired: unused("deviceCodes.deleteExpired"),

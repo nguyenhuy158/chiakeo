@@ -383,6 +383,6 @@ export const deviceTokenInputSchema = z.object({
   grant_type: z.string().max(128),
 });
 
-export const deviceApproveInputSchema = z.object({
+export const deviceUserCodeInputSchema = z.object({
   user_code: z.string().trim().min(1).max(32),
 });
