@@ -104,7 +104,7 @@ const settingsRoute = createRoute({
 });
 
 const cliAuthRoute = createRoute({
-  getParentRoute: () => appRoute,
+  getParentRoute: () => rootRoute,
   path: "/cli-auth",
   component: lazyRouteComponent(
     () => import("./routes/CliAuthPage"),
@@ -132,13 +132,13 @@ const funStatsRoute = createRoute({
 
 const routeTree = rootRoute.addChildren([
   loginRoute,
+  cliAuthRoute,
   shareRoute,
   helpRoute,
   appRoute.addChildren([
     homeRoute,
     gameRoute,
     settingsRoute,
-    cliAuthRoute,
     shuttlesRoute,
     funStatsRoute,
   ]),

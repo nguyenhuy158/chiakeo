@@ -1,8 +1,8 @@
-import { act, createElement } from "react";
+import { act, createElement, type ReactNode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const { mutation } = vi.hoisted(() => ({
+const { mutation, session, ssoLoginUrl } = vi.hoisted(() => ({
   mutation: {
     mutate: vi.fn(),
     isSuccess: false,
@@ -10,11 +10,27 @@ const { mutation } = vi.hoisted(() => ({
     data: undefined as { name: string } | undefined,
     error: null as Error | null,
   },
+  session: {
+    user: { id: "u1", name: "Huy" } as { id: string; name: string } | null,
+    isPending: false,
+  },
+  ssoLoginUrl: vi.fn(),
 }));
 
 vi.mock("../adapters/react-query/queries", () => ({
   useApproveCliAuth: () => mutation,
 }));
+vi.mock("../adapters/react-query/session-query", () => ({
+  useAppSession: () => session,
+}));
+vi.mock("../adapters/browser/sso", () => ({ ssoLoginUrl }));
+vi.mock("@tanstack/react-router", () => ({
+  Link: ({ to, children }: { to: string; children: ReactNode }) =>
+    createElement("a", { href: to }, children),
+}));
+vi.mock("../components/theme", () => ({ ThemeToggle: () => "theme toggle" }));
+vi.mock("../components/brand", () => ({ BrandMark: () => "brand mark" }));
+vi.mock("../components/ui", () => ({ LoadingState: () => "loading session" }));
 
 import { CliAuthPage } from "./CliAuthPage";
 
@@ -27,6 +43,10 @@ function render() {
 
 function codeInput() {
   return host.querySelector("input") as HTMLInputElement;
+}
+
+function submitButton() {
+  return host.querySelector('button[type="submit"]') as HTMLButtonElement;
 }
 
 function type(input: HTMLInputElement, value: string) {
@@ -57,6 +77,8 @@ beforeEach(() => {
     error: null,
   });
   mutation.mutate.mockReset();
+  Object.assign(session, { user: { id: "u1", name: "Huy" }, isPending: false });
+  ssoLoginUrl.mockReset().mockReturnValue("https://sso.example/login");
   window.history.replaceState(null, "", "/cli-auth");
   host = document.createElement("div");
   document.body.append(host);
@@ -66,26 +88,59 @@ beforeEach(() => {
 afterEach(() => {
   act(() => root.unmount());
   host.remove();
+  vi.unstubAllGlobals();
 });
 
 describe("CliAuthPage", () => {
-  it("keeps the button off until a code is typed, then sends it", () => {
+  it("waits for the session", () => {
+    session.isPending = true;
+    render();
+    expect(host.textContent).toContain("loading session");
+  });
+
+  it("asks a signed-out user to sign in and comes back to this page", () => {
+    session.user = null;
+    const fakeWindow = Object.create(window) as Window;
+    Object.defineProperty(fakeWindow, "location", {
+      value: { href: "", search: "?code=ABCD-2345" },
+      configurable: true,
+    });
+    vi.stubGlobal("window", fakeWindow);
     render();
     const button = host.querySelector("button") as HTMLButtonElement;
-    expect(button.disabled).toBe(true);
+    expect(button.textContent).toContain("Tiếp tục với Google");
+    act(() => button.click());
+    expect(ssoLoginUrl).toHaveBeenCalledWith("/cli-auth?code=ABCD-2345");
+    expect(fakeWindow.location.href).toBe("https://sso.example/login");
+  });
+
+  it("shows who is signed in and formats the code as the user types", () => {
+    render();
+    expect(host.textContent).toContain("Huy");
+    expect(submitButton().disabled).toBe(true);
+    type(codeInput(), "abcd2345zz");
+    expect(codeInput().value).toBe("ABCD-2345");
+    type(codeInput(), "ab");
+    expect(codeInput().value).toBe("AB");
     type(codeInput(), "abcd-2345");
-    expect(button.disabled).toBe(false);
+    expect(submitButton().disabled).toBe(false);
     submit();
-    expect(mutation.mutate).toHaveBeenCalledWith("abcd-2345");
+    expect(mutation.mutate).toHaveBeenCalledWith("ABCD-2345");
   });
 
   it("fills the code from the link", () => {
-    window.history.replaceState(null, "", "/cli-auth?code=WXYZ-9876");
+    window.history.replaceState(null, "", "/cli-auth?code=wxyz9876");
     render();
     expect(codeInput().value).toBe("WXYZ-9876");
+    expect(submitButton().disabled).toBe(false);
   });
 
-  it("shows a message for known and unknown errors and a pending label", () => {
+  it("starts empty when the link has no code", () => {
+    render();
+    expect(codeInput().value).toBe("");
+  });
+
+  it("shows a message for known and unknown errors and a pending state", () => {
     mutation.error = new Error("not_found");
     render();
     expect(host.textContent).toContain("hết hạn");
@@ -95,9 +150,10 @@ describe("CliAuthPage", () => {
     mutation.error = new Error("boom");
     render();
     expect(host.textContent).toContain("Không duyệt được");
+    mutation.error = null;
     mutation.isPending = true;
     render();
-    expect(host.textContent).toContain("Đang duyệt");
+    expect(submitButton().getAttribute("aria-busy")).toBe("true");
   });
 
   it("confirms with the device name once approved", () => {
@@ -107,5 +163,6 @@ describe("CliAuthPage", () => {
     expect(host.textContent).toContain("Đã cho phép");
     expect(host.textContent).toContain("May ban");
     expect(host.querySelector("form")).toBeNull();
+    expect(host.querySelector('a[href="/"]')).not.toBeNull();
   });
 });
