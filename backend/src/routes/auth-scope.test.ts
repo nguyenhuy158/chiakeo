@@ -34,6 +34,8 @@ const GUARDED_PATHS: [string, Hono<never>][] = [
   ["/api/games", gamesRouter as unknown as Hono<never>],
   ["/api/contacts", gamesRouter as unknown as Hono<never>],
   ["/api/contacts/abc", gamesRouter as unknown as Hono<never>],
+  ["/api/mcp-tokens", mcpTokensRouter as unknown as Hono<never>],
+  ["/api/mcp-tokens/abc", mcpTokensRouter as unknown as Hono<never>],
   // Kho cau la so lieu ca nhan cua nguoi ung tien mua cau.
   ["/api/shuttles", shuttlesRouter as unknown as Hono<never>],
 ];

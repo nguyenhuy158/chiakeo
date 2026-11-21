@@ -238,8 +238,14 @@ export const MAX_MCP_TOKENS_PER_USER = 20;
  * - "games:read": xem danh sach va chi tiet cuoc chia cua chinh minh
  * - "summary:read": lay ban tom tat dang chu (chua ten nguoi va so tien)
  * - "share:read": doc cuoc chia bat ky qua token trong link share
+ * - "api:full": goi REST API nhu chinh nguoi dung (CLI), tru quan ly token
  */
-export const MCP_SCOPES = ["games:read", "summary:read", "share:read"] as const;
+export const MCP_SCOPES = [
+  "games:read",
+  "summary:read",
+  "share:read",
+  "api:full",
+] as const;
 
 export const mcpScopeSchema = z.enum(MCP_SCOPES);
 

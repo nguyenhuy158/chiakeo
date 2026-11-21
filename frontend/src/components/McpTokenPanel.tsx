@@ -43,6 +43,10 @@ const SCOPE_INFO: Record<McpScope, { label: string; hint: string }> = {
     label: "Đọc qua link share",
     hint: "Mở cuộc chia bất kỳ bằng token trong link share (get_shared_game)",
   },
+  "api:full": {
+    label: "Toàn quyền như tôi (CLI)",
+    hint: "Đọc và ghi mọi cuộc chia như khi bạn đăng nhập, trừ quản lý token",
+  },
 };
 
 /** Bang voi breakpoint `lg` cua Tailwind, noi bo cuc doi sang hai cot. */
