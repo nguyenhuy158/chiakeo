@@ -26,8 +26,10 @@ describe("SSO browser redirects", () => {
     expect(ssoLogoutUrl()).toContain(
       encodeURIComponent("https://preview.huyab.cfd/login"),
     );
-    expect(ssoLoginUrl("/cli-auth?code=ABCD-2345")).toContain(
-      encodeURIComponent("https://preview.huyab.cfd/cli-auth?code=ABCD-2345"),
+    expect(ssoLoginUrl("/login/device?user_code=ABCD-2345")).toContain(
+      encodeURIComponent(
+        "https://preview.huyab.cfd/login/device?user_code=ABCD-2345",
+      ),
     );
   });
 });

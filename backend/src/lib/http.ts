@@ -16,6 +16,23 @@ export async function readJson<Schema extends z.ZodType>(
   return result.success ? result.data : null;
 }
 
+const FORM_CONTENT_TYPE = "application/x-www-form-urlencoded";
+
+/** RFC 8628 cho phep gui form-urlencoded (GitHub mac dinh dung no), nen nhan ca JSON. */
+export async function readJsonOrForm<Schema extends z.ZodType>(
+  c: Context,
+  schema: Schema,
+): Promise<z.output<Schema> | null> {
+  const isForm = (c.req.header("content-type") ?? "").includes(
+    FORM_CONTENT_TYPE,
+  );
+  const body = await (isForm ? c.req.parseBody() : c.req.json()).catch(
+    () => null,
+  );
+  const result = schema.safeParse(body);
+  return result.success ? result.data : null;
+}
+
 export function badRequest(c: Context, error: string) {
   return c.json({ error }, 400);
 }

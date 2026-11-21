@@ -1,8 +1,8 @@
 import { Hono } from "hono";
 import { describe, expect, it } from "vitest";
 import { aiRouter } from "./ai";
-import { cliAuthRouter } from "./cli-auth";
 import { gamesRouter } from "./games";
+import { loginDeviceRouter } from "./login-device";
 import { mcpTokensRouter } from "./mcp-tokens";
 import { photosRouter } from "./photos";
 import { shuttlesRouter } from "./shuttles";
@@ -16,7 +16,7 @@ import { shuttlesRouter } from "./shuttles";
 const PROTECTED_ROUTERS: [string, Hono<never>][] = [
   ["mcp-tokens", mcpTokensRouter as unknown as Hono<never>],
   ["ai", aiRouter as unknown as Hono<never>],
-  ["cli-auth", cliAuthRouter as unknown as Hono<never>],
+  ["login-device", loginDeviceRouter as unknown as Hono<never>],
   ["photos", photosRouter as unknown as Hono<never>],
   ["games", gamesRouter as unknown as Hono<never>],
   ["shuttles", shuttlesRouter as unknown as Hono<never>],
@@ -36,7 +36,7 @@ const GUARDED_PATHS: [string, Hono<never>][] = [
   ["/api/games", gamesRouter as unknown as Hono<never>],
   ["/api/contacts", gamesRouter as unknown as Hono<never>],
   ["/api/contacts/abc", gamesRouter as unknown as Hono<never>],
-  ["/api/cli-auth/approve", cliAuthRouter as unknown as Hono<never>],
+  ["/api/login/device/approve", loginDeviceRouter as unknown as Hono<never>],
   ["/api/mcp-tokens", mcpTokensRouter as unknown as Hono<never>],
   ["/api/mcp-tokens/abc", mcpTokensRouter as unknown as Hono<never>],
   // Kho cau la so lieu ca nhan cua nguoi ung tien mua cau.

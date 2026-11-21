@@ -153,17 +153,18 @@ export type McpTokenRow = {
   revokedAt: string | null;
 };
 
-/** Mot luot dang nhap CLI dang cho duyet (hoac da duyet) tren web. */
+/** Mot luot dang nhap CLI (device flow) dang cho duyet hoac cho CLI lay token. */
 export type DeviceCodeRow = {
+  /** SHA-256 hex cua device_code. */
   id: string;
   userCode: string;
-  tokenHash: string;
-  tokenPrefix: string;
   name: string;
   createdAt: string;
   expiresAt: string;
   userId: string | null;
   approvedAt: string | null;
+  encryptedToken: string | null;
+  lastPolledAt: string | null;
 };
 
 /** Mot dong kho cau nhu luu trong DB (chua tinh so con lai). */
@@ -355,7 +356,14 @@ export type GameRepository = {
     findById(id: string): Promise<DeviceCodeRow | null>;
     findByUserCode(userCode: string): Promise<DeviceCodeRow | null>;
     /** false khi dong da duoc duyet hoac da het han: chi duyet duoc mot lan. */
-    approve(id: string, userId: string, now: string): Promise<boolean>;
+    approve(
+      id: string,
+      userId: string,
+      encryptedToken: string,
+      now: string,
+    ): Promise<boolean>;
+    markPolled(id: string, now: string): Promise<void>;
+    delete(id: string): Promise<void>;
     deleteExpired(now: string): Promise<void>;
   };
   userPreferences: {

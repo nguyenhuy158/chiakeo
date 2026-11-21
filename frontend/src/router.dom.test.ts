@@ -74,7 +74,7 @@ describe("router", () => {
       "/",
       "/games/$gameId",
       "/settings",
-      "/cli-auth",
+      "/login/device",
       "/shuttles",
       "/fun",
     ]);

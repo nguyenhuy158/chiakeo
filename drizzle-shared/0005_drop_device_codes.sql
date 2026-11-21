@@ -1,0 +1,1 @@
+DROP TABLE `chiakeo_device_codes`;

@@ -9,7 +9,7 @@
 
 import assert from "node:assert/strict";
 import { execFile, spawn } from "node:child_process";
-import { createHash, randomBytes } from "node:crypto";
+import { randomBytes } from "node:crypto";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
@@ -18,6 +18,7 @@ import { chromium } from "playwright-core";
 
 const BASE = process.env.E2E_BASE_URL || "http://127.0.0.1:8787";
 const WAIT = { timeout: 15000 };
+const DEVICE_GRANT_TYPE = "urn:ietf:params:oauth:grant-type:device_code";
 const E2E_PASSWORD = "matkhau123";
 
 let passed = 0;
@@ -756,48 +757,78 @@ try {
   }
   ok("revoke MCP token from UI kills it");
 
-  // Dang nhap CLI kieu device code: CLI tu sinh secret, chi gui hash len.
-  const cliSecret = `ck_${randomBytes(32).toString("hex")}`;
-  const cliStart = await page.evaluate(
-    (body) =>
-      fetch("/api/cli-auth/start", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      }).then((response) => response.json()),
-    {
-      tokenHash: createHash("sha256").update(cliSecret).digest("hex"),
-      tokenPrefix: cliSecret.slice(0, 9),
-      name: "E2E CLI",
-    },
-  );
-  const cliCall = (path, method = "GET") =>
+  // Device flow giong GitHub (RFC 8628): xin ma, duyet tren web, doi lay access_token.
+  const deviceApi = (path, payload, contentType = "application/json") =>
     page.evaluate(
-      ([target, verb, secret]) =>
+      ([target, body, type]) =>
         fetch(target, {
-          method: verb,
-          headers: { Authorization: `Bearer ${secret}` },
-          credentials: "omit",
-        }).then((response) => response.status),
-      [path, method, cliSecret],
+          method: "POST",
+          headers: { "Content-Type": type },
+          body,
+        }).then(async (response) => ({
+          status: response.status,
+          body: await response.json(),
+        })),
+      [path, payload, contentType],
     );
-  assert.equal(await cliCall("/api/games"), 401);
-  await page.goto(`${BASE}/cli-auth?code=${cliStart.userCode}`);
+  const flow = (
+    await deviceApi(
+      "/api/login/device/code",
+      JSON.stringify({ name: "E2E CLI" }),
+    )
+  ).body;
+  const pollBody = JSON.stringify({
+    device_code: flow.device_code,
+    grant_type: DEVICE_GRANT_TYPE,
+  });
+  const pending = await deviceApi("/api/login/oauth/access_token", pollBody);
+  assert.equal(pending.status, 400);
+  assert.equal(pending.body.error, "authorization_pending");
+  const tooFast = await deviceApi("/api/login/oauth/access_token", pollBody);
+  assert.equal(tooFast.body.error, "slow_down");
+  const wrongGrant = await deviceApi(
+    "/api/login/oauth/access_token",
+    "device_code=x&grant_type=password",
+    "application/x-www-form-urlencoded",
+  );
+  assert.equal(wrongGrant.body.error, "unsupported_grant_type");
+
+  await page.goto(`${BASE}/login/device?user_code=${flow.user_code}`);
   const fitsOneScreen = () =>
     page.evaluate(
       () => document.documentElement.scrollHeight <= innerHeight + 1,
     );
-  assert.equal(await fitsOneScreen(), true, "/cli-auth cuon tren may tinh");
+  assert.equal(await fitsOneScreen(), true, "/login/device cuon tren may tinh");
   const desktopSize = page.viewportSize() ?? { width: 1280, height: 720 };
   await page.setViewportSize({ width: 390, height: 780 });
-  assert.equal(await fitsOneScreen(), true, "/cli-auth cuon tren dien thoai");
+  assert.equal(
+    await fitsOneScreen(),
+    true,
+    "/login/device cuon tren dien thoai",
+  );
   await page.setViewportSize(desktopSize);
   await page.click('button:has-text("Cho phép")');
   await page.waitForSelector("text=Đã cho phép", WAIT);
+
+  const issued = await deviceApi("/api/login/oauth/access_token", pollBody);
+  assert.equal(issued.status, 200);
+  assert.equal(issued.body.token_type, "bearer");
+  const cliSecret = issued.body.access_token;
+  const cliCall = (path) =>
+    page.evaluate(
+      ([target, secret]) =>
+        fetch(target, {
+          headers: { Authorization: `Bearer ${secret}` },
+          credentials: "omit",
+        }).then((response) => response.status),
+      [path, cliSecret],
+    );
   assert.equal(await cliCall("/api/games"), 200);
   assert.equal(await cliCall("/api/mcp-tokens"), 401);
+  const reused = await deviceApi("/api/login/oauth/access_token", pollBody);
+  assert.equal(reused.body.error, "expired_token");
   ok(
-    "CLI device login: approve on web, token reads games, cannot manage tokens",
+    "device login: approve on web, token reads games, cannot manage tokens, code works once",
   );
 
   // CLI that: `up` cho duyet tren web, roi tao ke va them khoan chi bang lenh.
@@ -826,7 +857,7 @@ try {
   const upExit = new Promise((resolve) => upProcess.on("exit", resolve));
   const cliCode = await new Promise((resolve, reject) => {
     const timer = setInterval(() => {
-      const match = /\?code=([A-Z0-9]{4}-[A-Z0-9]{4})/.exec(upOutput);
+      const match = /user_code=([A-Z0-9]{4}-[A-Z0-9]{4})/.exec(upOutput);
       if (match) {
         clearInterval(timer);
         resolve(match[1]);
@@ -837,7 +868,7 @@ try {
       reject(new Error(`chiakeo up khong in ma: ${upOutput}`));
     }, 15000);
   });
-  await page.goto(`${BASE}/cli-auth?code=${cliCode}`);
+  await page.goto(`${BASE}/login/device?user_code=${cliCode}`);
   await page.click('button:has-text("Cho phép")');
   await page.waitForSelector("text=Đã cho phép", WAIT);
   assert.equal(await upExit, 0);

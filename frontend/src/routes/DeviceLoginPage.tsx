@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { Check, Terminal } from "lucide-react";
 import { useState } from "react";
 import { ssoLoginUrl } from "../adapters/browser/sso";
-import { useApproveCliAuth } from "../adapters/react-query/queries";
+import { useApproveDeviceLogin } from "../adapters/react-query/queries";
 import { useAppSession } from "../adapters/react-query/session-query";
 import { BrandMark } from "../components/brand";
 import { ThemeToggle } from "../components/theme";
@@ -21,7 +21,7 @@ const ERROR_MESSAGE: Record<string, string> = {
   rate_limited: "Thử quá nhanh, chờ một phút rồi thử lại.",
 };
 const FALLBACK_ERROR = "Không duyệt được, thử lại sau.";
-const CODE_PARAM = "code";
+const CODE_PARAM = "user_code";
 const CODE_LENGTH = 8;
 const CODE_GROUP = CODE_LENGTH / 2;
 const CODE_HINT = "Nhập đủ 8 ký tự để bật nút Cho phép.";
@@ -55,9 +55,9 @@ function Frame({ children }: { children: React.ReactNode }) {
  * Trang rieng (khong nam trong khung app) de cho phep may chay `chiakeo up`,
  * giong trang device cua GitHub: mot the o giua, ma lon, hai nut.
  */
-export function CliAuthPage() {
+export function DeviceLoginPage() {
   const { user, isPending } = useAppSession();
-  const approve = useApproveCliAuth();
+  const approve = useApproveDeviceLogin();
   const [code, setCode] = useState(() =>
     formatCode(
       new URLSearchParams(window.location.search).get(CODE_PARAM) ?? "",
@@ -87,7 +87,7 @@ export function CliAuthPage() {
           className="mt-6"
           onClick={() => {
             window.location.href = ssoLoginUrl(
-              `/cli-auth${window.location.search}`,
+              `/login/device${window.location.search}`,
             );
           }}
         >

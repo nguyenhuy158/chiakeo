@@ -591,12 +591,12 @@ export function createGameRepository(db: Db): GameRepository {
           .limit(1);
         return rows[0] || null;
       },
-      async approve(id, userId, now) {
+      async approve(id, userId, encryptedToken, now) {
         // isNull(userId) + chua het han trong WHERE: hai nguoi cung duyet mot ma
         // thi chi mot nguoi thang, nguoi con lai nhan false.
         const rows = await db
           .update(schema.deviceCodes)
-          .set({ userId, approvedAt: now })
+          .set({ userId, encryptedToken, approvedAt: now })
           .where(
             and(
               eq(schema.deviceCodes.id, id),
@@ -606,6 +606,17 @@ export function createGameRepository(db: Db): GameRepository {
           )
           .returning({ id: schema.deviceCodes.id });
         return rows.length > 0;
+      },
+      async markPolled(id, now) {
+        await db
+          .update(schema.deviceCodes)
+          .set({ lastPolledAt: now })
+          .where(eq(schema.deviceCodes.id, id));
+      },
+      async delete(id) {
+        await db
+          .delete(schema.deviceCodes)
+          .where(eq(schema.deviceCodes.id, id));
       },
       async deleteExpired(now) {
         await db

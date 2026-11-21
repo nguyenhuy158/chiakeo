@@ -18,7 +18,7 @@ const { mutation, session, ssoLoginUrl } = vi.hoisted(() => ({
 }));
 
 vi.mock("../adapters/react-query/queries", () => ({
-  useApproveCliAuth: () => mutation,
+  useApproveDeviceLogin: () => mutation,
 }));
 vi.mock("../adapters/react-query/session-query", () => ({
   useAppSession: () => session,
@@ -32,13 +32,13 @@ vi.mock("../components/theme", () => ({ ThemeToggle: () => "theme toggle" }));
 vi.mock("../components/brand", () => ({ BrandMark: () => "brand mark" }));
 vi.mock("../components/ui", () => ({ LoadingState: () => "loading session" }));
 
-import { CliAuthPage } from "./CliAuthPage";
+import { DeviceLoginPage } from "./DeviceLoginPage";
 
 let host: HTMLDivElement;
 let root: Root;
 
 function render() {
-  act(() => root.render(createElement(CliAuthPage)));
+  act(() => root.render(createElement(DeviceLoginPage)));
 }
 
 function codeInput() {
@@ -79,7 +79,7 @@ beforeEach(() => {
   mutation.mutate.mockReset();
   Object.assign(session, { user: { id: "u1", name: "Huy" }, isPending: false });
   ssoLoginUrl.mockReset().mockReturnValue("https://sso.example/login");
-  window.history.replaceState(null, "", "/cli-auth");
+  window.history.replaceState(null, "", "/login/device");
   host = document.createElement("div");
   document.body.append(host);
   root = createRoot(host);
@@ -91,7 +91,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe("CliAuthPage", () => {
+describe("DeviceLoginPage", () => {
   it("waits for the session", () => {
     session.isPending = true;
     render();
@@ -102,7 +102,7 @@ describe("CliAuthPage", () => {
     session.user = null;
     const fakeWindow = Object.create(window) as Window;
     Object.defineProperty(fakeWindow, "location", {
-      value: { href: "", search: "?code=ABCD-2345" },
+      value: { href: "", search: "?user_code=ABCD-2345" },
       configurable: true,
     });
     vi.stubGlobal("window", fakeWindow);
@@ -110,7 +110,9 @@ describe("CliAuthPage", () => {
     const button = host.querySelector("button") as HTMLButtonElement;
     expect(button.textContent).toContain("Tiếp tục với Google");
     act(() => button.click());
-    expect(ssoLoginUrl).toHaveBeenCalledWith("/cli-auth?code=ABCD-2345");
+    expect(ssoLoginUrl).toHaveBeenCalledWith(
+      "/login/device?user_code=ABCD-2345",
+    );
     expect(fakeWindow.location.href).toBe("https://sso.example/login");
   });
 
@@ -131,7 +133,7 @@ describe("CliAuthPage", () => {
   });
 
   it("fills the code from the link", () => {
-    window.history.replaceState(null, "", "/cli-auth?code=wxyz9876");
+    window.history.replaceState(null, "", "/login/device?user_code=wxyz9876");
     render();
     expect(codeInput().value).toBe("WXYZ-9876");
     expect(submitButton().disabled).toBe(false);

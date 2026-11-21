@@ -368,23 +368,21 @@ export const paymentRequestInputSchema = z.object({
 
 export type PaymentRequestInput = z.infer<typeof paymentRequestInputSchema>;
 
-/** Do dai token `ck_` + 32 byte hex, dung de CLI tu sinh va server kiem tra dang. */
-export const CLI_TOKEN_PREFIX_PATTERN = /^ck_[0-9a-f]{6}$/;
-export const CLI_TOKEN_HASH_PATTERN = /^[0-9a-f]{64}$/;
-export const CLI_DEVICE_NAME_MAX_LENGTH = 60;
-export const CLI_USER_CODE_LENGTH = 8;
+/** grant_type cua device flow, giong GitHub va RFC 8628. */
+export const DEVICE_GRANT_TYPE = "urn:ietf:params:oauth:grant-type:device_code";
+export const DEVICE_NAME_MAX_LENGTH = 60;
+export const DEVICE_USER_CODE_LENGTH = 8;
 
-/** CLI gui hash va 6 ky tu dau cua token tu sinh; khong bao gio gui token goc. */
-export const cliAuthStartInputSchema = z.object({
-  tokenHash: z.string().regex(CLI_TOKEN_HASH_PATTERN),
-  tokenPrefix: z.string().regex(CLI_TOKEN_PREFIX_PATTERN),
-  name: z.string().trim().min(1).max(CLI_DEVICE_NAME_MAX_LENGTH).default("CLI"),
+/** `client_id` va `scope` cua RFC khong dung toi nen bi bo qua; `name` la them de nhan ra may. */
+export const deviceCodeInputSchema = z.object({
+  name: z.string().trim().min(1).max(DEVICE_NAME_MAX_LENGTH).default("CLI"),
 });
 
-export const cliAuthPollInputSchema = z.object({
-  deviceCode: z.string().min(1).max(128),
+export const deviceTokenInputSchema = z.object({
+  device_code: z.string().min(1).max(128),
+  grant_type: z.string().max(128),
 });
 
-export const cliAuthApproveInputSchema = z.object({
-  userCode: z.string().trim().min(1).max(32),
+export const deviceApproveInputSchema = z.object({
+  user_code: z.string().trim().min(1).max(32),
 });
