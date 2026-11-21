@@ -706,6 +706,12 @@ export function useCreateMcpToken() {
   });
 }
 
+export function useApproveCliAuth() {
+  return useMutation({
+    mutationFn: (userCode: string) => getGameApi().cliAuth.approve(userCode),
+  });
+}
+
 export function useRevokeMcpToken() {
   const queryClient = useQueryClient();
 

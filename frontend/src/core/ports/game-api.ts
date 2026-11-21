@@ -8,6 +8,7 @@ import type {
   ApiFunStats,
   ApiGame,
   ApiGameDetail,
+  ApiCliAuthApproved,
   ApiMcpToken,
   ApiPaymentOptions,
   ApiPaymentRequest,
@@ -168,6 +169,10 @@ export type GameApiPort = {
     /** Phan hoi kem `secret` - ban goc chi xuat hien dung lan tao nay. */
     create(input: McpTokenInput): Promise<ApiCreatedMcpToken>;
     revoke(tokenId: string): Promise<{ ok: boolean }>;
+  };
+  cliAuth: {
+    /** Duyet ma hien tren CLI; token chi duoc tao cho dung nguoi dang dang nhap. */
+    approve(userCode: string): Promise<ApiCliAuthApproved>;
   };
   ai: {
     suggestExpense(

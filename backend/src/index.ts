@@ -11,6 +11,7 @@ import {
   rateLimitPost,
 } from "./lib/rate-limit-middleware";
 import { aiRouter } from "./routes/ai";
+import { cliAuthRouter } from "./routes/cli-auth";
 import { crossBalancesRouter } from "./routes/cross-balances";
 import { emailSummaryRouter } from "./routes/email-summary";
 import { funStatsRouter } from "./routes/fun-stats";
@@ -88,6 +89,12 @@ app.use(
   rateLimitPost("photo-upload", PHOTO_UPLOAD_RATE_LIMIT),
 );
 app.use("/api/mcp", rateLimitPost("mcp", MCP_RATE_LIMIT));
+app.use("/api/cli-auth/start", rateLimitPost("cli-start", CREATE_RATE_LIMIT));
+app.use(
+  "/api/cli-auth/approve",
+  rateLimitPost("cli-approve", CREATE_RATE_LIMIT),
+);
+app.use("/api/cli-auth/poll", rateLimitPost("cli-poll", MCP_RATE_LIMIT));
 app.use("/api/mcp-tokens", rateLimitPost("mcp-token", CREATE_RATE_LIMIT));
 app.use(
   "/api/share/:token",
@@ -129,6 +136,7 @@ app.on(["GET", "POST"], `${AUTH_BASE_PATH}/*`, (c) =>
 app.route("/api", qrRouter);
 app.route("/api", mcpRouter);
 app.route("/api", mcpTokensRouter);
+app.route("/api", cliAuthRouter);
 app.route("/api", paymentsRouter);
 app.route("/api", shareRouter);
 app.route("/api", aiRouter);

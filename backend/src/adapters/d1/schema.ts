@@ -453,3 +453,22 @@ export const paymentTransactions = sqliteTable(
     index("chiakeo_payment_transactions_request_id_idx").on(table.requestId),
   ],
 );
+
+/**
+ * Dang nhap CLI kieu device code. CLI tu sinh token va chi gui hash len day,
+ * nen server khong bao gio giu ban token goc; duyet xong thi tao dong
+ * `chiakeo_mcp_tokens` voi dung hash do.
+ */
+export const deviceCodes = sqliteTable("chiakeo_device_codes", {
+  /** Ma CLI giu de hoi ket qua; la bi mat ngau nhien 32 byte. */
+  id: text("id").primaryKey(),
+  /** Ma ngan nguoi dung go tren web, dang XXXX-XXXX. */
+  userCode: text("user_code").notNull().unique(),
+  tokenHash: text("token_hash").notNull(),
+  tokenPrefix: text("token_prefix").notNull(),
+  name: text("name").notNull(),
+  createdAt: text("created_at").notNull(),
+  expiresAt: text("expires_at").notNull(),
+  userId: text("user_id").references(() => user.id, { onDelete: "cascade" }),
+  approvedAt: text("approved_at"),
+});

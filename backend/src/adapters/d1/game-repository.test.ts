@@ -251,6 +251,56 @@ describe("D1 game repository", () => {
     expect(await repo.mcpTokens.countActiveByUser("owner")).toBe(0);
   });
 
+  it("duyệt mã đăng nhập CLI đúng một lần và xóa mã hết hạn", async () => {
+    const repo = createGameRepository(createDb({ DB: database }));
+    const row = {
+      id: "device-d1",
+      userCode: "ABCD-2345",
+      tokenHash: "hash-device",
+      tokenPrefix: "ck_abcdef",
+      name: "May ban",
+      createdAt: "2026-07-01T00:00:00.000Z",
+      expiresAt: "2026-07-01T00:10:00.000Z",
+      userId: null,
+      approvedAt: null,
+    };
+    expect(await repo.deviceCodes.findById(row.id)).toBeNull();
+    expect(await repo.deviceCodes.findByUserCode(row.userCode)).toBeNull();
+    await repo.deviceCodes.insert(row);
+    expect((await repo.deviceCodes.findById(row.id))?.userCode).toBe(
+      row.userCode,
+    );
+    expect((await repo.deviceCodes.findByUserCode(row.userCode))?.id).toBe(
+      row.id,
+    );
+    expect(
+      await repo.deviceCodes.approve(
+        row.id,
+        "owner",
+        "2026-07-01T00:20:00.000Z",
+      ),
+    ).toBe(false);
+    expect(
+      await repo.deviceCodes.approve(
+        row.id,
+        "owner",
+        "2026-07-01T00:05:00.000Z",
+      ),
+    ).toBe(true);
+    expect(
+      await repo.deviceCodes.approve(
+        row.id,
+        "friend",
+        "2026-07-01T00:06:00.000Z",
+      ),
+    ).toBe(false);
+    expect((await repo.deviceCodes.findById(row.id))?.userId).toBe("owner");
+    await repo.deviceCodes.deleteExpired("2026-07-01T00:05:00.000Z");
+    expect(await repo.deviceCodes.findById(row.id)).not.toBeNull();
+    await repo.deviceCodes.deleteExpired("2026-07-01T00:10:00.000Z");
+    expect(await repo.deviceCodes.findById(row.id)).toBeNull();
+  });
+
   it("lưu ảnh, link chia sẻ và lịch sử trên D1", async () => {
     const repo = createGameRepository(createDb({ DB: database }));
     const game = await createGame(repo, "owner", { name: "Kèo media" });

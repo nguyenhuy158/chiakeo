@@ -26,6 +26,7 @@ import {
   useAddTransfer,
   useAiScanReceipt,
   useAiSuggestExpense,
+  useApproveCliAuth,
   useArchivedGames,
   useArchiveGame,
   useClosedGames,
@@ -319,6 +320,16 @@ describe("React Query game mutations", () => {
       await revokeCurrent().mutateAsync("token");
     });
     expect(revoke).toHaveBeenCalledWith("token");
+  });
+
+  it("approves a CLI login code", async () => {
+    const approve = vi.fn().mockResolvedValue({ name: "VM" });
+    provideGameApi({ cliAuth: { approve } } as unknown as GameApiPort);
+    const current = mount(useApproveCliAuth);
+    await act(async () => {
+      await current().mutateAsync("ABCD-2345");
+    });
+    expect(approve).toHaveBeenCalledWith("ABCD-2345");
   });
 
   it("gọi các thao tác game và người chơi qua port, cập nhật detail", async () => {

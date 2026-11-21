@@ -200,6 +200,12 @@ describe("HTTP Game API", () => {
     ["DELETE", "/api/mcp-tokens/t", () => api.mcpTokens.revoke("t")],
     [
       "POST",
+      "/api/cli-auth/approve",
+      () => api.cliAuth.approve("ABCD-2345"),
+      '{"userCode":"ABCD-2345"}',
+    ],
+    [
+      "POST",
       "/api/ai/expense",
       () => api.ai.suggestExpense("g", "dinner"),
       '{"gameId":"g","text":"dinner"}',

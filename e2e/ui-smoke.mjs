@@ -8,6 +8,7 @@
 //   playwright-core tu tim (xem findChromium trong @huyab/e2e).
 
 import assert from "node:assert/strict";
+import { createHash, randomBytes } from "node:crypto";
 import { join } from "node:path";
 import { findChromium } from "@huyab/e2e";
 import { chromium } from "playwright-core";
@@ -751,6 +752,41 @@ try {
     throw new Error(`token da thu hoi phai tra 401, got ${statusAfterRevoke}`);
   }
   ok("revoke MCP token from UI kills it");
+
+  // Dang nhap CLI kieu device code: CLI tu sinh secret, chi gui hash len.
+  const cliSecret = `ck_${randomBytes(32).toString("hex")}`;
+  const cliStart = await page.evaluate(
+    (body) =>
+      fetch("/api/cli-auth/start", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      }).then((response) => response.json()),
+    {
+      tokenHash: createHash("sha256").update(cliSecret).digest("hex"),
+      tokenPrefix: cliSecret.slice(0, 9),
+      name: "E2E CLI",
+    },
+  );
+  const cliCall = (path, method = "GET") =>
+    page.evaluate(
+      ([target, verb, secret]) =>
+        fetch(target, {
+          method: verb,
+          headers: { Authorization: `Bearer ${secret}` },
+          credentials: "omit",
+        }).then((response) => response.status),
+      [path, method, cliSecret],
+    );
+  assert.equal(await cliCall("/api/games"), 401);
+  await page.goto(`${BASE}/cli-auth?code=${cliStart.userCode}`);
+  await page.click('button:has-text("Cho phép")');
+  await page.waitForSelector("text=Đã cho phép", WAIT);
+  assert.equal(await cliCall("/api/games"), 200);
+  assert.equal(await cliCall("/api/mcp-tokens"), 401);
+  ok(
+    "CLI device login: approve on web, token reads games, cannot manage tokens",
+  );
 
   await page.goto(`${BASE}/`);
   await openCreateGameForm(page);
