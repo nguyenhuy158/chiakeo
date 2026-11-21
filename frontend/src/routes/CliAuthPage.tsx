@@ -24,6 +24,7 @@ const FALLBACK_ERROR = "Không duyệt được, thử lại sau.";
 const CODE_PARAM = "code";
 const CODE_LENGTH = 8;
 const CODE_GROUP = CODE_LENGTH / 2;
+const CODE_HINT = "Nhập đủ 8 ký tự để bật nút Cho phép.";
 
 /** Giu chu va so viet hoa, toi da 8 ky tu, chen dau gach giua: ABCD-2345. */
 function formatCode(raw: string) {
@@ -141,12 +142,13 @@ export function CliAuthPage() {
           className="mt-6"
           label="Mã trên terminal"
           error={errorMessage || undefined}
+          hint={code.length === CODE_LENGTH + 1 ? undefined : CODE_HINT}
         >
           <Input
             value={code}
             onChange={(event) => setCode(formatCode(event.target.value))}
             placeholder="ABCD-2345"
-            autoComplete="off"
+            autoComplete="one-time-code"
             autoCapitalize="characters"
             spellCheck={false}
             className="h-14 text-center font-mono text-2xl tracking-[0.3em] sm:h-14"

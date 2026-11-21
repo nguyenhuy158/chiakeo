@@ -783,6 +783,15 @@ try {
     );
   assert.equal(await cliCall("/api/games"), 401);
   await page.goto(`${BASE}/cli-auth?code=${cliStart.userCode}`);
+  const fitsOneScreen = () =>
+    page.evaluate(
+      () => document.documentElement.scrollHeight <= innerHeight + 1,
+    );
+  assert.equal(await fitsOneScreen(), true, "/cli-auth cuon tren may tinh");
+  const desktopSize = page.viewportSize() ?? { width: 1280, height: 720 };
+  await page.setViewportSize({ width: 390, height: 780 });
+  assert.equal(await fitsOneScreen(), true, "/cli-auth cuon tren dien thoai");
+  await page.setViewportSize(desktopSize);
   await page.click('button:has-text("Cho phép")');
   await page.waitForSelector("text=Đã cho phép", WAIT);
   assert.equal(await cliCall("/api/games"), 200);
@@ -836,14 +845,12 @@ try {
   await cliRun("new", "CLI Trip");
   await cliRun("add-person", "CLI Trip", "An", "Binh");
   await cliRun("add-expense", "CLI Trip", "Bia", "90k", "--payer", "An");
-  assert.match(
-    await cliRun("game", "CLI Trip"),
-    /Binh sends 45\.000 ₫ to An/,
-  );
+  assert.match(await cliRun("game", "CLI Trip"), /Binh sends 45\.000 ₫ to An/);
   await cliRun("pay", "CLI Trip", "Binh", "An", "45k");
   assert.doesNotMatch(await cliRun("game", "CLI Trip"), /sends/);
   await cliRun("down");
   await assert.rejects(cliRun("whoami"));
+  await assert.rejects(cliRun("no-such-command"));
   ok("CLI binary: up, create game, add expense, pay, down");
 
   await page.goto(`${BASE}/`);
