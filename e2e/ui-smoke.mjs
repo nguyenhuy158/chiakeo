@@ -252,7 +252,14 @@ try {
   await openExpenseSheet(page, "Karaoke", "90000");
   await page.click('button:has-text("Số tiền"):visible');
   await page.fill('input[aria-label="Phần tiền của An"]', "30000");
-  await page.fill('input[aria-label="Phần tiền của Binh"]', "60000");
+  await page.waitForFunction(
+    () =>
+      document.querySelector('input[aria-label="Phần tiền của Binh"]')
+        ?.value === "60000",
+    undefined,
+    WAIT,
+  );
+  ok("amount split auto-fills the remaining share");
   await submitExpenseSheet(page);
   // Balance moi: An +110.000, Binh -110.000
   await openTransferSheet(page, "Binh trả An");
