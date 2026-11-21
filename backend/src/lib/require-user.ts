@@ -1,6 +1,7 @@
 import type { Hono, MiddlewareHandler } from "hono";
 import { createDb, createGameRepository } from "../adapters/d1/game-repository";
 import { createAuth } from "../auth";
+import { authenticateMcpToken } from "../core/application/mcp-tokens";
 import type { GameRepository } from "../core/ports/game-repository";
 import type { Env } from "../env";
 import { readSsoToken, verifySsoToken } from "../sso";
@@ -30,6 +31,29 @@ export function protectPaths(router: Hono<AuthedEnv>, ...paths: string[]) {
   for (const path of paths) router.use(path, requireUser);
 }
 
+const API_TOKEN_PREFIX = "ck_";
+
+/**
+ * Token `ck_...` co scope `api:full` (CLI) dung duoc nhu mot phien dang nhap.
+ * Token chi doc cua MCP khong co scope nay nen bi tu choi o day.
+ */
+async function resolveApiTokenUserId(
+  env: Env,
+  request: Request,
+): Promise<string | null> {
+  const match = /^Bearer\s+(\S+)$/i.exec(
+    request.headers.get("Authorization")?.trim() ?? "",
+  );
+  const secret = match?.[1];
+  if (!secret?.startsWith(API_TOKEN_PREFIX)) return null;
+
+  const identity = await authenticateMcpToken(
+    createGameRepository(createDb(env)),
+    secret,
+  );
+  return identity?.scopes.includes("api:full") ? identity.userId : null;
+}
+
 /**
  * Hai duong dang nhap chay song song. better-auth di truoc vi la duong cu va
  * doc session ngay trong D1 cua app; cookie SSO chi duoc hoi khi khong co
@@ -42,10 +66,16 @@ export function protectPaths(router: Hono<AuthedEnv>, ...paths: string[]) {
 export async function resolveUserId(
   env: Env,
   request: Request,
+  options: { allowApiToken?: boolean } = {},
 ): Promise<string | null> {
   const auth = createAuth(env, request.url);
   const session = await auth.api.getSession({ headers: request.headers });
   if (session) return session.user.id;
+
+  if (options.allowApiToken !== false) {
+    const apiUserId = await resolveApiTokenUserId(env, request);
+    if (apiUserId) return apiUserId;
+  }
 
   const token = readSsoToken(request.headers);
   if (!token) return null;
@@ -56,13 +86,25 @@ export async function resolveUserId(
   return resolveSsoUserId(createDb(env), claims);
 }
 
-export const requireUser: MiddlewareHandler<AuthedEnv> = async (c, next) => {
-  const userId = await resolveUserId(c.env, c.req.raw);
-  if (!userId) {
-    return c.json({ error: "unauthorized" }, 401);
-  }
+function createRequireUser(
+  allowApiToken: boolean,
+): MiddlewareHandler<AuthedEnv> {
+  return async (c, next) => {
+    const userId = await resolveUserId(c.env, c.req.raw, { allowApiToken });
+    if (!userId) {
+      return c.json({ error: "unauthorized" }, 401);
+    }
 
-  c.set("userId", userId);
-  c.set("repo", createGameRepository(createDb(c.env)));
-  await next();
-};
+    c.set("userId", userId);
+    c.set("repo", createGameRepository(createDb(c.env)));
+    await next();
+  };
+}
+
+export const requireUser = createRequireUser(true);
+
+/**
+ * Chi nhan phien dang nhap that. Dung cho viec quan ly token: neu token CLI
+ * tao duoc token moi thi mat mot token la mat luon quyen tao them.
+ */
+export const requireSessionUser = createRequireUser(false);

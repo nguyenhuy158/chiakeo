@@ -13,7 +13,10 @@ import { profileRouter } from "./profile";
 import { shuttlesRouter } from "./shuttles";
 import { userPreferencesRouter } from "./user-preferences";
 
-vi.mock("../lib/require-user", () => ({ protectPaths: vi.fn() }));
+vi.mock("../lib/require-user", () => ({
+  protectPaths: vi.fn(),
+  requireSessionUser: async (_c: unknown, next: () => Promise<void>) => next(),
+}));
 
 let fake: ReturnType<typeof createFakeRepo>;
 let app: Hono<AuthedEnv>;
