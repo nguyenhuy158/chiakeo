@@ -16,21 +16,21 @@ const CONFIG_FILE_MODE = 0o600;
 const AMOUNT_UNITS = { k: 1_000, m: 1_000_000 };
 const AMOUNT_PATTERN = /^(\d+(?:[.,]\d+)?)([km])?$/i;
 
-const HELP = `chiakeo: dòng lệnh cho Chia Kèo
+const HELP = `chiakeo: command line for Chia Kèo
 
-  up [--url URL] [--name TÊN]   đăng nhập bằng mã (như tailscale up)
-  down                          xóa token trên máy này
-  whoami                        xem đang đăng nhập là ai
-  games                         danh sách kèo đang chơi
-  game <kèo>                    chi tiết, số dư và ai chuyển cho ai
-  new <tên> [--people N]        tạo kèo mới
-  add-person <kèo> <tên...>     thêm người
-  add-expense <kèo> <nội dung> <số tiền> --payer TÊN [--split A,B] [--note GHI CHÚ]
-  pay <kèo> <người trả> <người nhận> <số tiền>
-  api <METHOD> <đường dẫn> [json]   gọi thẳng REST API
+  up [--url URL] [--name NAME]   sign in with a code (like tailscale up)
+  down                           delete the token on this computer
+  whoami                         show who is signed in
+  games                          list the open games
+  game <game>                    details, balances and who pays whom
+  new <name> [--people N]        create a game
+  add-person <game> <name...>    add people
+  add-expense <game> <title> <amount> --payer NAME [--split A,B] [--note NOTE]
+  pay <game> <from> <to> <amount>
+  api <METHOD> <path> [json]     call the REST API directly
 
-<kèo> là mã, id hoặc tên kèo. Số tiền: 50000, 50k, 1.5m.
-Biến môi trường: CHIAKEO_CONFIG (đường dẫn file cấu hình).`;
+<game> is the game code, id or name. Amount: 50000, 50k, 1.5m.
+Environment: CHIAKEO_CONFIG (path of the config file).`;
 
 class CliError extends Error {}
 
@@ -45,7 +45,7 @@ function parseArgs(argv) {
     }
     const value = argv[index + 1];
     if (value === undefined || value.startsWith("--")) {
-      throw new CliError(`Thiếu giá trị cho ${arg}`);
+      throw new CliError(`Missing value for ${arg}`);
     }
     flags[arg.slice(2)] = value;
     index += 1;
@@ -55,10 +55,10 @@ function parseArgs(argv) {
 
 function parseAmount(raw) {
   const match = AMOUNT_PATTERN.exec(String(raw ?? "").trim());
-  if (!match) throw new CliError(`Số tiền không hợp lệ: ${raw}`);
+  if (!match) throw new CliError(`Bad amount: ${raw}`);
   const unit = AMOUNT_UNITS[(match[2] || "").toLowerCase()] ?? 1;
   const amount = Math.round(Number(match[1].replace(",", ".")) * unit);
-  if (amount <= 0) throw new CliError(`Số tiền phải lớn hơn 0: ${raw}`);
+  if (amount <= 0) throw new CliError(`Amount must be more than 0: ${raw}`);
   return amount;
 }
 
@@ -68,7 +68,7 @@ async function readConfig() {
   try {
     return JSON.parse(await readFile(CONFIG_PATH, "utf8"));
   } catch {
-    throw new CliError("Chưa đăng nhập. Chạy: chiakeo up");
+    throw new CliError("You are not signed in. Run: chiakeo up");
   }
 }
 
@@ -83,7 +83,7 @@ async function request(baseUrl, method, path, body, token) {
   });
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
-    throw new CliError(`${response.status} ${data.error || "lỗi không rõ"}`);
+    throw new CliError(`${response.status} ${data.error || "unknown error"}`);
   }
   return data;
 }
@@ -102,10 +102,10 @@ async function up({ flags }) {
     name: (flags.name || hostname()).slice(0, DEVICE_NAME_MAX_LENGTH),
   });
 
-  console.log(`Mở link này trong trình duyệt (đăng nhập nếu được hỏi):
+  console.log(`Open this link in your browser (sign in if asked):
   ${start.verificationUrl}?code=${start.userCode}
-Hoặc mở ${start.verificationUrl} và nhập mã: ${start.userCode}
-Đang chờ duyệt...`);
+Or open ${start.verificationUrl} and type this code: ${start.userCode}
+Waiting for approval...`);
 
   const deadline = Date.now() + start.expiresInSeconds * 1000;
   while (Date.now() < deadline) {
@@ -119,29 +119,29 @@ Hoặc mở ${start.verificationUrl} và nhập mã: ${start.userCode}
         mode: CONFIG_FILE_MODE,
       });
       await chmod(CONFIG_PATH, CONFIG_FILE_MODE);
-      console.log("Đã đăng nhập.");
+      console.log("Signed in.");
       return;
     }
     if (status === "expired") break;
   }
-  throw new CliError("Mã hết hạn. Chạy lại: chiakeo up");
+  throw new CliError("The code has expired. Run again: chiakeo up");
 }
 
 async function down() {
   await rm(CONFIG_PATH, { force: true });
   console.log(
-    "Đã xóa token trên máy này. Muốn thu hồi hẳn thì vào Cài đặt > Token trên web.",
+    "Deleted the token on this computer. To revoke it fully, open Settings > Tokens on the website.",
   );
 }
 
 async function whoami() {
   const { user } = await authed("GET", "/api/session");
-  if (!user) throw new CliError("Token không còn hiệu lực. Chạy: chiakeo up");
+  if (!user) throw new CliError("The token is no longer valid. Run: chiakeo up");
   console.log(user.name);
 }
 
 async function findGame(ref) {
-  // Kèo tất toán xong tự đóng và rời danh sách đang chơi, nên tìm cả kèo đã đóng.
+  // A settled game closes by itself and leaves the open list, so search closed games too.
   const [active, closed] = await Promise.all([
     authed("GET", "/api/games"),
     authed("GET", "/api/games/closed"),
@@ -156,8 +156,8 @@ async function findGame(ref) {
   if (matches.length !== 1) {
     throw new CliError(
       matches.length === 0
-        ? `Không thấy kèo "${ref}" `
-        : `Có ${matches.length} kèo khớp "${ref}", dùng mã kèo`,
+        ? `No game found for "${ref}"`
+        : `${matches.length} games match "${ref}", use the game code`,
     );
   }
   return matches[0];
@@ -174,7 +174,7 @@ function findPerson(game, name) {
   );
   if (!person) {
     const names = game.participants.map((item) => item.name).join(", ");
-    throw new CliError(`Không thấy "${name}" trong kèo. Có: ${names}`);
+    throw new CliError(`No person "${name}" in this game. People: ${names}`);
   }
   return person;
 }
@@ -183,75 +183,75 @@ async function games() {
   const list = await authed("GET", "/api/games");
   for (const game of list) {
     console.log(
-      `${game.code}  ${game.name}  (${game.participantCount} người, ${game.expenseCount} khoản)`,
+      `${game.code}  ${game.name}  (${game.participantCount} people, ${game.expenseCount} expenses)`,
     );
   }
-  if (list.length === 0) console.log("Chưa có kèo nào đang chơi.");
+  if (list.length === 0) console.log("No open games.");
 }
 
 async function game({ positional }) {
-  const detail = await loadGame(requireArg(positional[1], "<kèo>"));
+  const detail = await loadGame(requireArg(positional[1], "<game>"));
   const nameOf = (id) =>
     detail.participants.find((item) => item.id === id)?.name ?? id;
   console.log(`${detail.name} (${detail.code})`);
-  console.log(`Tổng chi: ${money(detail.summary.totalExpense)}`);
+  console.log(`Total spent: ${money(detail.summary.totalExpense)}`);
   for (const row of detail.summary.balances) {
     console.log(
-      `  ${nameOf(row.participantId)}: trả ${money(row.paid)}, phải chịu ${money(row.owed)}, số dư ${money(row.balance)}`,
+      `  ${nameOf(row.participantId)}: paid ${money(row.paid)}, owes ${money(row.owed)}, balance ${money(row.balance)}`,
     );
   }
   for (const row of detail.summary.settlements) {
     console.log(
-      `${nameOf(row.fromParticipantId)} chuyển ${money(row.amount)} cho ${nameOf(row.toParticipantId)}`,
+      `${nameOf(row.fromParticipantId)} sends ${money(row.amount)} to ${nameOf(row.toParticipantId)}`,
     );
   }
 }
 
 async function newGame({ positional, flags }) {
   const created = await authed("POST", "/api/games", {
-    name: requireArg(positional[1], "<tên>"),
+    name: requireArg(positional[1], "<name>"),
     participantCount: Number(flags.people || 0),
   });
-  console.log(`Đã tạo kèo ${created.name} (${created.code})`);
+  console.log(`Created game ${created.name} (${created.code})`);
 }
 
 async function addPerson({ positional }) {
-  const target = await findGame(requireArg(positional[1], "<kèo>"));
+  const target = await findGame(requireArg(positional[1], "<game>"));
   const names = positional.slice(2);
-  if (names.length === 0) throw new CliError("Thiếu <tên...>");
+  if (names.length === 0) throw new CliError("Missing <name...>");
   for (const name of names) {
     await authed("POST", `/api/games/${target.id}/participants`, { name });
   }
-  console.log(`Đã thêm ${names.join(", ")} vào ${target.name}`);
+  console.log(`Added ${names.join(", ")} to ${target.name}`);
 }
 
 async function addExpense({ positional, flags }) {
-  const detail = await loadGame(requireArg(positional[1], "<kèo>"));
+  const detail = await loadGame(requireArg(positional[1], "<game>"));
   const payer = findPerson(detail, requireArg(flags.payer, "--payer"));
   const split = flags.split
     ? flags.split.split(",").map((name) => findPerson(detail, name.trim()))
     : detail.participants;
   await authed("POST", `/api/games/${detail.id}/expenses`, {
-    title: requireArg(positional[2], "<nội dung>"),
+    title: requireArg(positional[2], "<title>"),
     amount: parseAmount(positional[3]),
     note: flags.note || "",
     payerParticipantId: payer.id,
     splitMode: "equal",
     splitParticipantIds: split.map((person) => person.id),
   });
-  console.log(`Đã thêm khoản chi ${positional[2]} vào ${detail.name}`);
+  console.log(`Added expense ${positional[2]} to ${detail.name}`);
 }
 
 async function pay({ positional }) {
-  const detail = await loadGame(requireArg(positional[1], "<kèo>"));
-  const from = findPerson(detail, requireArg(positional[2], "<người trả>"));
-  const to = findPerson(detail, requireArg(positional[3], "<người nhận>"));
+  const detail = await loadGame(requireArg(positional[1], "<game>"));
+  const from = findPerson(detail, requireArg(positional[2], "<from>"));
+  const to = findPerson(detail, requireArg(positional[3], "<to>"));
   await authed("POST", `/api/games/${detail.id}/transfers`, {
     fromParticipantId: from.id,
     toParticipantId: to.id,
     amount: parseAmount(positional[4]),
   });
-  console.log(`Đã ghi nhận ${from.name} trả ${to.name}`);
+  console.log(`Recorded: ${from.name} paid ${to.name}`);
 }
 
 async function api({ positional }) {
@@ -259,14 +259,14 @@ async function api({ positional }) {
   const body = json === undefined ? undefined : JSON.parse(json);
   const data = await authed(
     requireArg(method, "<METHOD>").toUpperCase(),
-    requireArg(path, "<đường dẫn>"),
+    requireArg(path, "<path>"),
     body,
   );
   console.log(JSON.stringify(data, null, 2));
 }
 
 function requireArg(value, label) {
-  if (value === undefined) throw new CliError(`Thiếu ${label}`);
+  if (value === undefined) throw new CliError(`Missing ${label}`);
   return value;
 }
 
