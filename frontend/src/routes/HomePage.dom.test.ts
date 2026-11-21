@@ -7,6 +7,7 @@ const { state, openGames, useCrossBalances } = vi.hoisted(() => ({
     loading: false,
     games: undefined as Array<Record<string, unknown>> | undefined,
     people: undefined as Array<{ name: string; net: number }> | undefined,
+    settlements: [] as Array<{ from: string; to: string; amount: number }>,
     stats: undefined as Record<string, unknown> | undefined,
     shell: true,
     hideSettled: false,
@@ -22,7 +23,11 @@ vi.mock("../adapters/react-query/queries", () => ({
 vi.mock("../adapters/react-query/cross-balances-query", () => ({
   useCrossBalances: (enabled: boolean) => {
     useCrossBalances(enabled);
-    return { data: state.people ? { people: state.people } : undefined };
+    return {
+      data: state.people
+        ? { people: state.people, settlements: state.settlements }
+        : undefined,
+    };
   },
 }));
 vi.mock("../adapters/react-query/fun-stats-query", () => ({
@@ -72,6 +77,7 @@ beforeEach(() => {
   state.loading = false;
   state.games = undefined;
   state.people = undefined;
+  state.settlements = [];
   state.stats = undefined;
   state.shell = true;
   openGames.mockReset();
@@ -189,6 +195,42 @@ describe("HomePage compact", () => {
     render();
     expect(compact.textContent).toContain("Cầu 1");
     expect(pill("Vài con số")).toBeUndefined();
+  });
+
+  it("hiện tổng nợ và mở chi tiết nợ những ai khi bấm vào một người", () => {
+    state.games = [game("1")];
+    state.people = [
+      { name: "An", net: 150000 },
+      { name: "Bình", net: -100000 },
+      { name: "Chi", net: -50000 },
+    ];
+    state.settlements = [
+      { from: "Bình", to: "An", amount: 100000 },
+      { from: "Chi", to: "An", amount: 50000 },
+    ];
+    render();
+    act(() => pill("Cần tất toán")?.click());
+    expect(host.textContent).toContain("Tổng đang nợ");
+    expect(host.textContent).toContain("150.000");
+    const row = [...host.querySelectorAll("button")].find((item) =>
+      item.textContent?.includes("Bình"),
+    ) as HTMLButtonElement;
+    act(() => row.click());
+    expect(document.body.textContent).toContain("Bình còn nợ 100.000");
+    expect(document.body.textContent).toContain("Trả cho An");
+    expect(document.body.textContent).not.toContain("Chi còn nợ");
+    act(() => {
+      document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+      vi.runAllTimers();
+    });
+    expect(document.body.textContent).not.toContain("Trả cho An");
+    const creditor = [...host.querySelectorAll("button")].find((item) =>
+      item.textContent?.includes("An"),
+    ) as HTMLButtonElement;
+    act(() => creditor.click());
+    expect(document.body.textContent).toContain("An được nhận 150.000");
+    expect(document.body.textContent).toContain("Nhận từ Bình");
+    expect(document.body.textContent).toContain("Nhận từ Chi");
   });
 
   it("bỏ ô người ứng nhiều nhất và khoản khủng nhất khi không có", () => {

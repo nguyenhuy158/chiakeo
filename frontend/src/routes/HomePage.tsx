@@ -11,11 +11,9 @@ import { useMobileShell } from "../components/mobile-shell";
 import { EmptyState, SkeletonCard } from "../components/ui";
 import { formatMoney } from "../core/domain/money";
 import { PagedList } from "../ui/PagedList";
+import { Sheet } from "../ui/Sheet";
 
 /** Bao nhieu cuoc gan nhat hien o phan "tiep tuc". Du de nhan ra, khong tran man hinh. */
-/** Bao nhieu nguoi hien o phan cong no truoc khi cat bot. */
-const DEBT_LIMIT = 5;
-
 const COMPACT_ROW_HEIGHT_PX = 60;
 
 type HomeView = "recent" | "debts" | "stats";
@@ -65,6 +63,7 @@ function StatTile({
 export function HomePage() {
   const shell = useMobileShell();
   const [view, setView] = useState<HomeView>("recent");
+  const [selectedDebt, setSelectedDebt] = useState<DebtRow | null>(null);
   const gamesQuery = useGames();
   const funStatsQuery = useFunStats();
 
@@ -80,12 +79,10 @@ export function HomePage() {
 
   const stats = funStatsQuery.data;
   const people = balancesQuery.data?.people || [];
-  const owedToMe = people
-    .filter((person) => person.net > 0)
-    .slice(0, DEBT_LIMIT);
-  const owedByMe = people
-    .filter((person) => person.net < 0)
-    .slice(0, DEBT_LIMIT);
+  const settlements = balancesQuery.data?.settlements || [];
+  const owedToMe = people.filter((person) => person.net > 0);
+  const owedByMe = people.filter((person) => person.net < 0);
+  const totalOwed = owedByMe.reduce((sum, person) => sum - person.net, 0);
   const hasDebts = owedToMe.length > 0 || owedByMe.length > 0;
 
   if (gamesQuery.isPending) {
@@ -123,7 +120,20 @@ export function HomePage() {
     ...(hasStats ? [{ id: "stats" as const, label: "Vài con số" }] : []),
   ];
   const activeView = views.some((item) => item.id === view) ? view : "recent";
-  const debtRows: DebtRow[] = [...owedToMe, ...owedByMe];
+  const debtRows: DebtRow[] = [...owedByMe, ...owedToMe];
+  const selectedIsDebtor = selectedDebt !== null && selectedDebt.net < 0;
+  const selectedTransfers = selectedDebt
+    ? settlements
+        .filter((row) =>
+          selectedIsDebtor
+            ? row.from === selectedDebt.name
+            : row.to === selectedDebt.name,
+        )
+        .map((row) => ({
+          name: selectedIsDebtor ? row.to : row.from,
+          amount: row.amount,
+        }))
+    : [];
 
   const compact = (
     <div data-one-screen className="flex h-full min-h-0 flex-col gap-2">
@@ -178,31 +188,46 @@ export function HomePage() {
           />
         )}
         {activeView === "debts" && (
-          <PagedList
-            items={debtRows}
-            getKey={(person) => `${person.name}-${person.net}`}
-            rowHeight={COMPACT_ROW_HEIGHT_PX}
-            renderItem={(person) => (
-              <div className="flex h-full items-center gap-2 rounded-lg border border-border px-3">
-                <Avatar name={person.name} size={28} />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm text-stone-900 dark:text-stone-100">
-                    {person.name}
-                  </p>
-                  <p
-                    className={`text-xs font-medium ${person.net > 0 ? "text-success" : "text-danger"}`}
+          <div className="flex h-full min-h-0 flex-col gap-2">
+            <p className="shrink-0 text-xs text-fg-muted">
+              Tổng đang nợ:{" "}
+              <span className="font-semibold text-danger">
+                {formatMoney(totalOwed)}
+              </span>{" "}
+              · nhấn một người để xem chi tiết.
+            </p>
+            <div className="min-h-0 flex-1">
+              <PagedList
+                items={debtRows}
+                getKey={(person) => `${person.name}-${person.net}`}
+                rowHeight={COMPACT_ROW_HEIGHT_PX}
+                renderItem={(person) => (
+                  <button
+                    type="button"
+                    onClick={() => setSelectedDebt(person)}
+                    className="flex h-full w-full items-center gap-2 rounded-lg border border-border px-3 text-start transition active:bg-surface-muted"
                   >
-                    {person.net > 0 ? "Được nhận lại" : "Còn phải trả"}
-                  </p>
-                </div>
-                <span
-                  className={`shrink-0 text-sm font-semibold ${person.net > 0 ? "text-success" : "text-danger"}`}
-                >
-                  {formatMoney(Math.abs(person.net))}
-                </span>
-              </div>
-            )}
-          />
+                    <Avatar name={person.name} size={28} />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm text-stone-900 dark:text-stone-100">
+                        {person.name}
+                      </p>
+                      <p
+                        className={`text-xs font-medium ${person.net > 0 ? "text-success" : "text-danger"}`}
+                      >
+                        {person.net > 0 ? "Được nhận lại" : "Còn phải trả"}
+                      </p>
+                    </div>
+                    <span
+                      className={`shrink-0 text-sm font-semibold ${person.net > 0 ? "text-success" : "text-danger"}`}
+                    >
+                      {formatMoney(Math.abs(person.net))}
+                    </span>
+                  </button>
+                )}
+              />
+            </div>
+          </div>
         )}
         {activeView === "stats" && stats && (
           <div className="space-y-2">
@@ -245,5 +270,35 @@ export function HomePage() {
     </div>
   );
 
-  return compact;
+  return (
+    <>
+      {compact}
+      <Sheet
+        open={selectedDebt !== null}
+        onClose={() => setSelectedDebt(null)}
+        title={
+          selectedDebt
+            ? `${selectedDebt.name} ${selectedIsDebtor ? "còn nợ" : "được nhận"} ${formatMoney(Math.abs(selectedDebt.net))}`
+            : ""
+        }
+      >
+        <ul className="space-y-2 px-4 pb-4">
+          {selectedTransfers.map((transfer) => (
+            <li
+              key={transfer.name}
+              className="flex items-center gap-2 rounded-lg border border-border px-3 py-2"
+            >
+              <Avatar name={transfer.name} size={28} />
+              <span className="min-w-0 flex-1 truncate text-sm">
+                {selectedIsDebtor ? "Trả cho" : "Nhận từ"} {transfer.name}
+              </span>
+              <span className="shrink-0 text-sm font-semibold">
+                {formatMoney(transfer.amount)}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </Sheet>
+    </>
+  );
 }
