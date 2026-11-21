@@ -1,0 +1,25 @@
+{
+  "name": "chiakeo",
+  "version": "0.1.0",
+  "description": "Command line for Chia Kèo: log in with a device code, read and write games",
+  "type": "module",
+  "bin": {
+    "chiakeo": "chiakeo.mjs"
+  },
+  "files": [
+    "chiakeo.mjs",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nguyenhuy158/chiakeo.git",
+    "directory": "cli"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
