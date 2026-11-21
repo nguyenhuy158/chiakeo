@@ -118,12 +118,14 @@ describe("CliAuthPage", () => {
     render();
     expect(host.textContent).toContain("Huy");
     expect(submitButton().disabled).toBe(true);
+    expect(host.textContent).toContain("Nhập đủ 8 ký tự");
     type(codeInput(), "abcd2345zz");
     expect(codeInput().value).toBe("ABCD-2345");
     type(codeInput(), "ab");
     expect(codeInput().value).toBe("AB");
     type(codeInput(), "abcd-2345");
     expect(submitButton().disabled).toBe(false);
+    expect(host.textContent).not.toContain("Nhập đủ 8 ký tự");
     submit();
     expect(mutation.mutate).toHaveBeenCalledWith("ABCD-2345");
   });

@@ -88,6 +88,10 @@ e2e/                           # E2E (Playwright + wrangler dev), plumbing from 
   run.mjs                      #   `pnpm e2e`: build -> migrate D1 local -> serve -> both smokes
   readonly-smoke.mjs           #   GET-only smoke, safe on prod (`pnpm e2e:prod`)
   ui-smoke.mjs                 #   Smoke suite qua UI that, ghi D1 local (`pnpm e2e:smoke`)
+
+cli/                           # CLI `chiakeo` (npm: chiakeo), Node 22, khong dependency
+  chiakeo.mjs                  #   up/down/whoami/games/game/new/add-person/add-expense/pay/api
+  package.json  README.md      #   Goi npm; chu trong CLI la tieng Anh A2 (kit CLI rule)
 ```
 
 ## Ecosystem
@@ -309,6 +313,16 @@ things reading the code does not show right away.
   dung + đúng số TK nhận. Mỗi giao dịch lưu 1 dòng `payment_transactions`
   (khóa = id SePay) và cộng dồn: chuyển thiếu vẫn `pending`, đủ mới `markPaid`
   (chỉ đổi request còn pending) rồi ghi trả nợ — không ghi hai lần.
+- **CLI đăng nhập bằng device code, server KHÔNG giữ secret**: CLI tự sinh
+  `ck_...`, chỉ gửi SHA-256 lên `/api/cli-auth/start`. Người dùng gõ mã ở
+  `/cli-auth` (cần session web thật) thì server mới tạo dòng
+  `chiakeo_mcp_tokens` với scope `api:full` đúng hash đó. Token này gọi được
+  REST như người dùng nhưng KHÔNG gọi được `/api/mcp-tokens`
+  (`requireSessionUser`) — đổi sang `requireUser` là token CLI tự đẻ ra token.
+  `/cli-auth` là route cấp root, không nằm trong `AppLayout`.
+- **Prod chạy Turso, không phải D1**: worker có secret `TURSO_DATABASE_URL` nên
+  migration prod là `pnpm db:migrate:remote` (drizzle-kit, cần `TURSO_*`);
+  `wrangler d1 migrations apply` chỉ đổi D1 dùng chung mà app không đọc.
 - **Brand: capybara v2**, PNG/ICO/SVG trong `public/` do bộ sinh icon của
   `nguyenhuy158/kit` (`docs/BRAND.md`) tạo ra; `BrandMark` dùng `/pwa-192.png`.
 - **Test dùng `fake-game-repository.ts`** (in-memory double) đặt cạnh use

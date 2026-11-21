@@ -136,7 +136,8 @@ async function down() {
 
 async function whoami() {
   const { user } = await authed("GET", "/api/session");
-  if (!user) throw new CliError("The token is no longer valid. Run: chiakeo up");
+  if (!user)
+    throw new CliError("The token is no longer valid. Run: chiakeo up");
   console.log(user.name);
 }
 
@@ -286,10 +287,14 @@ const COMMANDS = {
 
 async function main() {
   const args = parseArgs(process.argv.slice(2));
-  const command = COMMANDS[args.positional[0]];
-  if (!command) {
+  const [name] = args.positional;
+  if (name === undefined) {
     console.log(HELP);
     return;
+  }
+  const command = COMMANDS[name];
+  if (!command) {
+    throw new CliError(`Unknown command: ${name}. Run chiakeo for help.`);
   }
   await command(args);
 }
