@@ -695,18 +695,23 @@ export function createGameRepository(db: Db): GameRepository {
 
     contacts: {
       async listByOwner(userId) {
-        return db
+        const rows = await db
           .select({
             id: schema.contacts.id,
             name: schema.contacts.name,
             bankId: schema.contacts.bankId,
             accountNo: schema.contacts.accountNo,
             accountName: schema.contacts.accountName,
+            accounts: schema.contacts.accounts,
             updatedAt: schema.contacts.updatedAt,
           })
           .from(schema.contacts)
           .where(eq(schema.contacts.ownerUserId, userId))
           .orderBy(asc(schema.contacts.name));
+        return rows.map((row) => ({
+          ...row,
+          accounts: row.accounts ?? undefined,
+        }));
       },
       async getOwned(contactId, userId) {
         const rows = await db
@@ -716,6 +721,7 @@ export function createGameRepository(db: Db): GameRepository {
             bankId: schema.contacts.bankId,
             accountNo: schema.contacts.accountNo,
             accountName: schema.contacts.accountName,
+            accounts: schema.contacts.accounts,
             updatedAt: schema.contacts.updatedAt,
           })
           .from(schema.contacts)
@@ -726,7 +732,9 @@ export function createGameRepository(db: Db): GameRepository {
             ),
           )
           .limit(1);
-        return rows[0] || null;
+        return rows[0]
+          ? { ...rows[0], accounts: rows[0].accounts ?? undefined }
+          : null;
       },
       async upsert(row) {
         await db
@@ -739,6 +747,7 @@ export function createGameRepository(db: Db): GameRepository {
             bankId: row.bankId,
             accountNo: row.accountNo,
             accountName: row.accountName,
+            accounts: row.accounts,
             createdAt: row.createdAt,
             updatedAt: row.updatedAt,
           })
@@ -747,9 +756,19 @@ export function createGameRepository(db: Db): GameRepository {
             target: [schema.contacts.ownerUserId, schema.contacts.nameKey],
             set: {
               name: row.name,
-              bankId: row.bankId,
-              accountNo: row.accountNo,
-              accountName: row.accountName,
+              bankId:
+                row.accounts === undefined
+                  ? sql`CASE WHEN ${schema.contacts.accounts} IS NULL THEN ${row.bankId} ELSE ${schema.contacts.bankId} END`
+                  : row.bankId,
+              accountNo:
+                row.accounts === undefined
+                  ? sql`CASE WHEN ${schema.contacts.accounts} IS NULL THEN ${row.accountNo} ELSE ${schema.contacts.accountNo} END`
+                  : row.accountNo,
+              accountName:
+                row.accounts === undefined
+                  ? sql`CASE WHEN ${schema.contacts.accounts} IS NULL THEN ${row.accountName} ELSE ${schema.contacts.accountName} END`
+                  : row.accountName,
+              accounts: row.accounts,
               updatedAt: row.updatedAt,
             },
           });
