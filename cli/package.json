@@ -1,6 +1,6 @@
 {
   "name": "chiakeo",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Command line for Chia Kèo: log in with a device code, read and write games",
   "type": "module",
   "bin": {
