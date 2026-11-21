@@ -8,8 +8,11 @@
 //   playwright-core tu tim (xem findChromium trong @huyab/e2e).
 
 import assert from "node:assert/strict";
+import { execFile, spawn } from "node:child_process";
 import { createHash, randomBytes } from "node:crypto";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { promisify } from "node:util";
 import { findChromium } from "@huyab/e2e";
 import { chromium } from "playwright-core";
 
@@ -787,6 +790,61 @@ try {
   ok(
     "CLI device login: approve on web, token reads games, cannot manage tokens",
   );
+
+  // CLI that: `up` cho duyet tren web, roi tao ke va them khoan chi bang lenh.
+  const cliEnv = {
+    ...process.env,
+    CHIAKEO_CONFIG: join(
+      tmpdir(),
+      `chiakeo-e2e-${randomBytes(4).toString("hex")}.json`,
+    ),
+  };
+  const cliRun = async (...args) =>
+    (
+      await promisify(execFile)("node", ["cli/chiakeo.mjs", ...args], {
+        env: cliEnv,
+      })
+    ).stdout;
+  const upProcess = spawn(
+    "node",
+    ["cli/chiakeo.mjs", "up", "--url", BASE, "--name", "E2E binary"],
+    { env: cliEnv },
+  );
+  let upOutput = "";
+  upProcess.stdout.on("data", (chunk) => {
+    upOutput += chunk;
+  });
+  const upExit = new Promise((resolve) => upProcess.on("exit", resolve));
+  const cliCode = await new Promise((resolve, reject) => {
+    const timer = setInterval(() => {
+      const match = /\?code=([A-Z0-9]{4}-[A-Z0-9]{4})/.exec(upOutput);
+      if (match) {
+        clearInterval(timer);
+        resolve(match[1]);
+      }
+    }, 100);
+    setTimeout(() => {
+      clearInterval(timer);
+      reject(new Error(`chiakeo up khong in ma: ${upOutput}`));
+    }, 15000);
+  });
+  await page.goto(`${BASE}/cli-auth?code=${cliCode}`);
+  await page.click('button:has-text("Cho phép")');
+  await page.waitForSelector("text=Đã cho phép", WAIT);
+  assert.equal(await upExit, 0);
+  assert.match(await cliRun("whoami"), /\S/);
+  await cliRun("new", "CLI Trip");
+  await cliRun("add-person", "CLI Trip", "An", "Binh");
+  await cliRun("add-expense", "CLI Trip", "Bia", "90k", "--payer", "An");
+  assert.match(
+    await cliRun("game", "CLI Trip"),
+    /Binh chuyển 45\.000 ₫ cho An/,
+  );
+  await cliRun("pay", "CLI Trip", "Binh", "An", "45k");
+  assert.doesNotMatch(await cliRun("game", "CLI Trip"), /chuyển/);
+  await cliRun("down");
+  await assert.rejects(cliRun("whoami"));
+  ok("CLI binary: up, create game, add expense, pay, down");
 
   await page.goto(`${BASE}/`);
   await openCreateGameForm(page);
