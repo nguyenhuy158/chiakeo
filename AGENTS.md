@@ -233,6 +233,10 @@ curl https://chiakeo.huyab.cfd/api/health    # ok:false + hint = migration not a
 
 A mismatched commit means the build has not finished yet; wait and re-check.
 
+CLI release: bump `version` in `cli/package.json` (PR to `main`), then push the tag
+`cli-v<version>`. `.github/workflows/publish-cli.yml` checks that the tag matches the
+version and runs `npm publish` with the repo secret `NPM_TOKEN`. Never publish by hand.
+
 ## Architecture Decisions & Pitfalls
 
 Docs split, do not duplicate: dependency direction, the "Không làm" list and

@@ -1,0 +1,29 @@
+name: Publish CLI
+
+on:
+  push:
+    tags: ["cli-v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+      - name: Tag must match the CLI version
+        run: |
+          version="$(node -p "require('./cli/package.json').version")"
+          test "${GITHUB_REF_NAME}" = "cli-v${version}" || { echo "Tag ${GITHUB_REF_NAME} does not match cli/package.json version ${version}"; exit 1; }
+      - name: Smoke test
+        run: node cli/chiakeo.mjs | head -1
+      - name: Publish
+        working-directory: cli
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
