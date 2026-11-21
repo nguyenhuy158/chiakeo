@@ -153,6 +153,19 @@ export type McpTokenRow = {
   revokedAt: string | null;
 };
 
+/** Mot luot dang nhap CLI dang cho duyet (hoac da duyet) tren web. */
+export type DeviceCodeRow = {
+  id: string;
+  userCode: string;
+  tokenHash: string;
+  tokenPrefix: string;
+  name: string;
+  createdAt: string;
+  expiresAt: string;
+  userId: string | null;
+  approvedAt: string | null;
+};
+
 /** Mot dong kho cau nhu luu trong DB (chua tinh so con lai). */
 export type ShuttleEntryRow = {
   id: string;
@@ -336,6 +349,14 @@ export type GameRepository = {
       revokedAt: string,
     ): Promise<boolean>;
     touchLastUsed(tokenId: string, lastUsedAt: string): Promise<void>;
+  };
+  deviceCodes: {
+    insert(row: DeviceCodeRow): Promise<void>;
+    findById(id: string): Promise<DeviceCodeRow | null>;
+    findByUserCode(userCode: string): Promise<DeviceCodeRow | null>;
+    /** false khi dong da duoc duyet hoac da het han: chi duyet duoc mot lan. */
+    approve(id: string, userId: string, now: string): Promise<boolean>;
+    deleteExpired(now: string): Promise<void>;
   };
   userPreferences: {
     /** Toan bo tuy chon da luu cua user; key la du do tang tren hieu. */

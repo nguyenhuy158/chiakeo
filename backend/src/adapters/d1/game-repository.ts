@@ -3,9 +3,11 @@ import {
   asc,
   desc,
   eq,
+  gt,
   inArray,
   isNotNull,
   isNull,
+  lte,
   sql,
 } from "drizzle-orm";
 import { drizzle as drizzleD1 } from "drizzle-orm/d1";
@@ -566,6 +568,49 @@ export function createGameRepository(db: Db): GameRepository {
           .update(schema.mcpTokens)
           .set({ lastUsedAt })
           .where(eq(schema.mcpTokens.id, tokenId));
+      },
+    },
+
+    deviceCodes: {
+      async insert(row) {
+        await db.insert(schema.deviceCodes).values(row);
+      },
+      async findById(id) {
+        const rows = await db
+          .select()
+          .from(schema.deviceCodes)
+          .where(eq(schema.deviceCodes.id, id))
+          .limit(1);
+        return rows[0] || null;
+      },
+      async findByUserCode(userCode) {
+        const rows = await db
+          .select()
+          .from(schema.deviceCodes)
+          .where(eq(schema.deviceCodes.userCode, userCode))
+          .limit(1);
+        return rows[0] || null;
+      },
+      async approve(id, userId, now) {
+        // isNull(userId) + chua het han trong WHERE: hai nguoi cung duyet mot ma
+        // thi chi mot nguoi thang, nguoi con lai nhan false.
+        const rows = await db
+          .update(schema.deviceCodes)
+          .set({ userId, approvedAt: now })
+          .where(
+            and(
+              eq(schema.deviceCodes.id, id),
+              isNull(schema.deviceCodes.userId),
+              gt(schema.deviceCodes.expiresAt, now),
+            ),
+          )
+          .returning({ id: schema.deviceCodes.id });
+        return rows.length > 0;
+      },
+      async deleteExpired(now) {
+        await db
+          .delete(schema.deviceCodes)
+          .where(lte(schema.deviceCodes.expiresAt, now));
       },
     },
 

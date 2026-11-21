@@ -283,3 +283,20 @@ export type ApiPaymentRequest = {
   status: "pending" | "paid";
   paidAmount: number;
 };
+
+export type ApiCliAuthStart = {
+  deviceCode: string;
+  /** Dang XXXX-XXXX, nguoi dung go tren trang xac nhan. */
+  userCode: string;
+  verificationUrl: string;
+  expiresInSeconds: number;
+  intervalSeconds: number;
+};
+
+export type ApiCliAuthPoll = {
+  status: "pending" | "approved" | "expired";
+};
+
+export type ApiCliAuthApproved = {
+  name: string;
+};

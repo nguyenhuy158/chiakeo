@@ -145,6 +145,9 @@ export function createHttpGameApi(): GameApiPort {
       create: (input) => post(`/api/mcp-tokens`, input),
       revoke: (tokenId) => destroy(`/api/mcp-tokens/${tokenId}`),
     },
+    cliAuth: {
+      approve: (userCode) => post(`/api/cli-auth/approve`, { userCode }),
+    },
     ai: {
       suggestExpense: (gameId, text) =>
         post(`/api/ai/expense`, { gameId, text }),

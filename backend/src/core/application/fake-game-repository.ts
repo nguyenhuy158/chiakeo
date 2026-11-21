@@ -4,6 +4,7 @@
 
 import type {
   CollaboratorRow,
+  DeviceCodeRow,
   ExpenseRow,
   ExpenseSplitRow,
   ExpenseUpdate,
@@ -35,6 +36,7 @@ export type FakeState = {
   paymentRequests: PaymentRequestRow[];
   paymentTransactions: PaymentTransactionRow[];
   shuttleEntries: ShuttleEntryRow[];
+  deviceCodes: DeviceCodeRow[];
   users: { id: string; name: string; email: string }[];
 };
 
@@ -88,6 +90,7 @@ function emptyState(): FakeState {
     paymentRequests: [],
     paymentTransactions: [],
     shuttleEntries: [],
+    deviceCodes: [],
     users: [],
   };
 }
@@ -299,6 +302,27 @@ export function createFakeRepo(initial: Partial<FakeState> = {}) {
       insert: async () => {},
       revoke: async () => false,
       touchLastUsed: async () => {},
+    },
+    deviceCodes: {
+      insert: async (row) => {
+        state.deviceCodes.push(row);
+      },
+      findById: async (id) =>
+        state.deviceCodes.find((row) => row.id === id) || null,
+      findByUserCode: async (userCode) =>
+        state.deviceCodes.find((row) => row.userCode === userCode) || null,
+      approve: async (id, userId, now) => {
+        const row = state.deviceCodes.find((item) => item.id === id);
+        if (!row || row.userId || row.expiresAt <= now) return false;
+        row.userId = userId;
+        row.approvedAt = now;
+        return true;
+      },
+      deleteExpired: async (now) => {
+        state.deviceCodes = state.deviceCodes.filter(
+          (row) => row.expiresAt > now,
+        );
+      },
     },
     userPreferences: {
       listByUser: async () => [],

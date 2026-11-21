@@ -217,6 +217,13 @@ export function fakeRepo(
       delete: unused("participants.delete"),
     },
     paymentProfiles: { listByParticipantIds: async () => [] },
+    deviceCodes: {
+      insert: unused("deviceCodes.insert"),
+      findById: unused("deviceCodes.findById"),
+      findByUserCode: unused("deviceCodes.findByUserCode"),
+      approve: unused("deviceCodes.approve"),
+      deleteExpired: unused("deviceCodes.deleteExpired"),
+    },
     userPreferences: {
       listByUser: async () => [],
       upsert: unused("userPreferences.upsert"),

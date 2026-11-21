@@ -84,39 +84,63 @@ export async function listMcpTokens(
   return rows.map((row) => toApiToken(row, now));
 }
 
-export async function createMcpToken(
+/**
+ * Ghi mot token da biet hash. Dung chung cho tao token tren web (server sinh
+ * secret) va dang nhap CLI (CLI tu sinh secret, chi gui hash len).
+ */
+export async function insertMcpToken(
   repo: GameRepository,
   userId: string,
-  input: McpTokenInput,
-): Promise<ApiCreatedMcpToken> {
+  token: {
+    name: string;
+    tokenHash: string;
+    tokenPrefix: string;
+    scopes: McpScope[];
+    expiresInDays: number | null;
+  },
+): Promise<ApiMcpToken> {
   const activeCount = await repo.mcpTokens.countActiveByUser(userId);
   if (activeCount >= MAX_MCP_TOKENS_PER_USER) {
     throw new BadRequestError("too_many_mcp_tokens");
   }
 
-  // Bo scope trung de "games:read games:read" khong thanh hai quyen.
-  const scopes = [...new Set(input.scopes)];
-  const secret = generateSecret();
   const now = nowIso();
-  const expiresInDays = input.expiresInDays ?? null;
-
   const row: McpTokenRow = {
     id: createId("mcptok"),
     userId,
-    name: input.name,
-    tokenHash: await hashMcpToken(secret),
-    tokenPrefix: secret.slice(0, VISIBLE_PREFIX_LENGTH),
-    scopes: scopes.join(" "),
+    name: token.name,
+    tokenHash: token.tokenHash,
+    tokenPrefix: token.tokenPrefix,
+    // Bo scope trung de "games:read games:read" khong thanh hai quyen.
+    scopes: [...new Set(token.scopes)].join(" "),
     createdAt: now,
     lastUsedAt: null,
-    expiresAt: expiresInDays
-      ? new Date(Date.parse(now) + expiresInDays * MS_PER_DAY).toISOString()
+    expiresAt: token.expiresInDays
+      ? new Date(
+          Date.parse(now) + token.expiresInDays * MS_PER_DAY,
+        ).toISOString()
       : null,
     revokedAt: null,
   };
 
   await repo.mcpTokens.insert(row);
-  return { token: toApiToken(row, now), secret };
+  return toApiToken(row, now);
+}
+
+export async function createMcpToken(
+  repo: GameRepository,
+  userId: string,
+  input: McpTokenInput,
+): Promise<ApiCreatedMcpToken> {
+  const secret = generateSecret();
+  const token = await insertMcpToken(repo, userId, {
+    name: input.name,
+    tokenHash: await hashMcpToken(secret),
+    tokenPrefix: secret.slice(0, VISIBLE_PREFIX_LENGTH),
+    scopes: input.scopes,
+    expiresInDays: input.expiresInDays ?? null,
+  });
+  return { token, secret };
 }
 
 export async function revokeMcpToken(
