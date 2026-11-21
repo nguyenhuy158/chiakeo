@@ -263,6 +263,7 @@ describe("D1 game repository", () => {
       approvedAt: null,
       encryptedToken: null,
       lastPolledAt: null,
+      deniedAt: null,
     };
     expect(await repo.deviceCodes.findById(row.id)).toBeNull();
     expect(await repo.deviceCodes.findByUserCode(row.userCode)).toBeNull();
@@ -313,6 +314,29 @@ describe("D1 game repository", () => {
     await repo.deviceCodes.insert({ ...row, userCode: "WXYZ-6789" });
     await repo.deviceCodes.delete(row.id);
     expect(await repo.deviceCodes.findById(row.id)).toBeNull();
+
+    const denied = { ...row, id: "device-d2", userCode: "KLMN-4567" };
+    await repo.deviceCodes.insert(denied);
+    expect(
+      await repo.deviceCodes.deny(denied.id, "2026-07-01T00:20:00.000Z"),
+    ).toBe(false);
+    expect(
+      await repo.deviceCodes.deny(denied.id, "2026-07-01T00:05:00.000Z"),
+    ).toBe(true);
+    expect(
+      await repo.deviceCodes.deny(denied.id, "2026-07-01T00:06:00.000Z"),
+    ).toBe(false);
+    expect(
+      await repo.deviceCodes.approve(
+        denied.id,
+        "owner",
+        "cipher",
+        "2026-07-01T00:06:00.000Z",
+      ),
+    ).toBe(false);
+    expect((await repo.deviceCodes.findById(denied.id))?.deniedAt).toBe(
+      "2026-07-01T00:05:00.000Z",
+    );
   });
 
   it("lưu ảnh, link chia sẻ và lịch sử trên D1", async () => {

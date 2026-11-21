@@ -1,0 +1,1 @@
+ALTER TABLE `chiakeo_device_codes` ADD `denied_at` text;

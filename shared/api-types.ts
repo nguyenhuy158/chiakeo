@@ -290,7 +290,6 @@ export type ApiDeviceCode = {
   /** Dang XXXX-XXXX, nguoi dung go tren trang xac nhan. */
   user_code: string;
   verification_uri: string;
-  verification_uri_complete: string;
   expires_in: number;
   interval: number;
 };
@@ -303,4 +302,14 @@ export type ApiDeviceToken = {
 
 export type ApiDeviceApproved = {
   name: string;
+};
+
+export type ApiDeviceDenied = {
+  name: string;
+};
+
+/** Chi ten may va ma: du de nguoi dung nhan ra may truoc khi duyet. */
+export type ApiDeviceLookup = {
+  name: string;
+  user_code: string;
 };

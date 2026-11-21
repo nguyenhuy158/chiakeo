@@ -9,6 +9,8 @@ import type {
   ApiGame,
   ApiGameDetail,
   ApiDeviceApproved,
+  ApiDeviceDenied,
+  ApiDeviceLookup,
   ApiMcpToken,
   ApiPaymentOptions,
   ApiPaymentRequest,
@@ -171,8 +173,11 @@ export type GameApiPort = {
     revoke(tokenId: string): Promise<{ ok: boolean }>;
   };
   deviceLogin: {
+    /** Buoc xac nhan: tra ten may xin quyen de nguoi dung doi chieu truoc khi duyet. */
+    lookup(userCode: string): Promise<ApiDeviceLookup>;
     /** Duyet ma hien tren CLI; token chi duoc tao cho dung nguoi dang dang nhap. */
     approve(userCode: string): Promise<ApiDeviceApproved>;
+    deny(userCode: string): Promise<ApiDeviceDenied>;
   };
   ai: {
     suggestExpense(

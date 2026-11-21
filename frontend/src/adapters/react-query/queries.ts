@@ -706,6 +706,18 @@ export function useCreateMcpToken() {
   });
 }
 
+export function useLookupDeviceLogin() {
+  return useMutation({
+    mutationFn: (userCode: string) => getGameApi().deviceLogin.lookup(userCode),
+  });
+}
+
+export function useDenyDeviceLogin() {
+  return useMutation({
+    mutationFn: (userCode: string) => getGameApi().deviceLogin.deny(userCode),
+  });
+}
+
 export function useApproveDeviceLogin() {
   return useMutation({
     mutationFn: (userCode: string) =>

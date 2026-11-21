@@ -94,7 +94,15 @@ app.use(
   rateLimitPost("device-code", CREATE_RATE_LIMIT),
 );
 app.use(
+  "/api/login/device/lookup",
+  rateLimitPost("device-approve", CREATE_RATE_LIMIT),
+);
+app.use(
   "/api/login/device/approve",
+  rateLimitPost("device-approve", CREATE_RATE_LIMIT),
+);
+app.use(
+  "/api/login/device/deny",
   rateLimitPost("device-approve", CREATE_RATE_LIMIT),
 );
 app.use(

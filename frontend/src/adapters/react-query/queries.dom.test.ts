@@ -27,6 +27,8 @@ import {
   useAiScanReceipt,
   useAiSuggestExpense,
   useApproveDeviceLogin,
+  useDenyDeviceLogin,
+  useLookupDeviceLogin,
   useArchivedGames,
   useArchiveGame,
   useClosedGames,
@@ -330,6 +332,22 @@ describe("React Query game mutations", () => {
       await current().mutateAsync("ABCD-2345");
     });
     expect(approve).toHaveBeenCalledWith("ABCD-2345");
+
+    const lookup = vi.fn().mockResolvedValue({ name: "VM" });
+    const deny = vi.fn().mockResolvedValue({ name: "VM" });
+    provideGameApi({
+      deviceLogin: { lookup, deny },
+    } as unknown as GameApiPort);
+    const lookupCurrent = mount(useLookupDeviceLogin);
+    await act(async () => {
+      await lookupCurrent().mutateAsync("ABCD-2345");
+    });
+    expect(lookup).toHaveBeenCalledWith("ABCD-2345");
+    const denyCurrent = mount(useDenyDeviceLogin);
+    await act(async () => {
+      await denyCurrent().mutateAsync("ABCD-2345");
+    });
+    expect(deny).toHaveBeenCalledWith("ABCD-2345");
   });
 
   it("gọi các thao tác game và người chơi qua port, cập nhật detail", async () => {

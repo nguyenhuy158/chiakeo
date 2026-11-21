@@ -50,6 +50,13 @@
       "when": 1795279953680,
       "tag": "0006_create_device_flow",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1795283219188,
+      "tag": "0007_device_denied",
+      "breakpoints": true
     }
   ]
 }

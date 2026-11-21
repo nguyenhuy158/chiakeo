@@ -1,12 +1,14 @@
 import { Hono, type MiddlewareHandler } from "hono";
 import {
-  deviceApproveInputSchema,
+  deviceUserCodeInputSchema,
   deviceCodeInputSchema,
   deviceTokenInputSchema,
 } from "../../../shared/schemas";
 import { createDb, createGameRepository } from "../adapters/d1/game-repository";
 import {
   approveDeviceFlow,
+  denyDeviceFlow,
+  lookupDeviceFlow,
   pollDeviceFlow,
   startDeviceFlow,
 } from "../core/application/device-codes";
@@ -34,7 +36,9 @@ const noStore: MiddlewareHandler<AuthedEnv> = async (c, next) => {
 
 loginDeviceRouter.use("/login/device/code", attachRepo, noStore);
 loginDeviceRouter.use("/login/oauth/access_token", attachRepo, noStore);
+loginDeviceRouter.use("/login/device/lookup", requireSessionUser);
 loginDeviceRouter.use("/login/device/approve", requireSessionUser);
+loginDeviceRouter.use("/login/device/deny", requireSessionUser);
 
 loginDeviceRouter.post("/login/device/code", async (c) => {
   const input = await readJsonOrForm(c, deviceCodeInputSchema);
@@ -54,8 +58,22 @@ loginDeviceRouter.post("/login/oauth/access_token", async (c) => {
   );
 });
 
+loginDeviceRouter.post("/login/device/lookup", async (c) => {
+  const input = await readJsonOrForm(c, deviceUserCodeInputSchema);
+  if (!input) return badRequest(c, INVALID_REQUEST);
+
+  return respond(c, () => lookupDeviceFlow(c.get("repo"), input.user_code));
+});
+
+loginDeviceRouter.post("/login/device/deny", async (c) => {
+  const input = await readJsonOrForm(c, deviceUserCodeInputSchema);
+  if (!input) return badRequest(c, INVALID_REQUEST);
+
+  return respond(c, () => denyDeviceFlow(c.get("repo"), input.user_code));
+});
+
 loginDeviceRouter.post("/login/device/approve", async (c) => {
-  const input = await readJsonOrForm(c, deviceApproveInputSchema);
+  const input = await readJsonOrForm(c, deviceUserCodeInputSchema);
   if (!input) return badRequest(c, INVALID_REQUEST);
 
   return respond(c, () =>

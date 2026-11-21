@@ -793,7 +793,7 @@ try {
   );
   assert.equal(wrongGrant.body.error, "unsupported_grant_type");
 
-  await page.goto(`${BASE}/login/device?user_code=${flow.user_code}`);
+  await page.goto(`${BASE}/login/device`);
   const fitsOneScreen = () =>
     page.evaluate(
       () => document.documentElement.scrollHeight <= innerHeight + 1,
@@ -805,6 +805,14 @@ try {
     await fitsOneScreen(),
     true,
     "/login/device cuon tren dien thoai",
+  );
+  await page.fill("input[placeholder='ABCD-2345']", flow.user_code);
+  await page.click('button:has-text("Tiếp tục")');
+  await page.waitForSelector('h1:has-text("E2E CLI")', WAIT);
+  assert.equal(
+    await fitsOneScreen(),
+    true,
+    "buoc xac nhan cuon tren dien thoai",
   );
   await page.setViewportSize(desktopSize);
   await page.click('button:has-text("Cho phép")');
@@ -830,6 +838,35 @@ try {
   ok(
     "device login: approve on web, token reads games, cannot manage tokens, code works once",
   );
+
+  // Chong lua dao: link co ?user_code= khong duoc dien san ma, va co the Tu choi.
+  const denied = (
+    await deviceApi(
+      "/api/login/device/code",
+      JSON.stringify({ name: "Evil laptop" }),
+    )
+  ).body;
+  await page.goto(`${BASE}/login/device?user_code=${denied.user_code}`);
+  await page.waitForSelector("input[placeholder='ABCD-2345']", WAIT);
+  assert.equal(
+    await page.inputValue("input[placeholder='ABCD-2345']"),
+    "",
+    "trang khong duoc dien san ma tu URL",
+  );
+  await page.fill("input[placeholder='ABCD-2345']", denied.user_code);
+  await page.click('button:has-text("Tiếp tục")');
+  await page.waitForSelector('h1:has-text("Evil laptop")', WAIT);
+  await page.click('button:has-text("Từ chối")');
+  await page.waitForSelector("text=Đã từ chối", WAIT);
+  const deniedPoll = await deviceApi(
+    "/api/login/oauth/access_token",
+    JSON.stringify({
+      device_code: denied.device_code,
+      grant_type: DEVICE_GRANT_TYPE,
+    }),
+  );
+  assert.equal(deniedPoll.body.error, "access_denied");
+  ok("device login: no prefilled code from the link, deny gives access_denied");
 
   // CLI that: `up` cho duyet tren web, roi tao ke va them khoan chi bang lenh.
   const cliEnv = {
@@ -857,7 +894,7 @@ try {
   const upExit = new Promise((resolve) => upProcess.on("exit", resolve));
   const cliCode = await new Promise((resolve, reject) => {
     const timer = setInterval(() => {
-      const match = /user_code=([A-Z0-9]{4}-[A-Z0-9]{4})/.exec(upOutput);
+      const match = /type this code: ([A-Z0-9]{4}-[A-Z0-9]{4})/.exec(upOutput);
       if (match) {
         clearInterval(timer);
         resolve(match[1]);
@@ -868,7 +905,10 @@ try {
       reject(new Error(`chiakeo up khong in ma: ${upOutput}`));
     }, 15000);
   });
-  await page.goto(`${BASE}/login/device?user_code=${cliCode}`);
+  await page.goto(`${BASE}/login/device`);
+  await page.fill("input[placeholder='ABCD-2345']", cliCode);
+  await page.click('button:has-text("Tiếp tục")');
+  await page.waitForSelector('h1:has-text("E2E binary")', WAIT);
   await page.click('button:has-text("Cho phép")');
   await page.waitForSelector("text=Đã cho phép", WAIT);
   assert.equal(await upExit, 0);

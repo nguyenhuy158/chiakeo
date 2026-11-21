@@ -165,6 +165,7 @@ export type DeviceCodeRow = {
   approvedAt: string | null;
   encryptedToken: string | null;
   lastPolledAt: string | null;
+  deniedAt: string | null;
 };
 
 /** Mot dong kho cau nhu luu trong DB (chua tinh so con lai). */
@@ -362,6 +363,8 @@ export type GameRepository = {
       encryptedToken: string,
       now: string,
     ): Promise<boolean>;
+    /** false khi dong da duoc duyet, da tu choi hoac da het han. */
+    deny(id: string, now: string): Promise<boolean>;
     markPolled(id: string, now: string): Promise<void>;
     delete(id: string): Promise<void>;
     deleteExpired(now: string): Promise<void>;

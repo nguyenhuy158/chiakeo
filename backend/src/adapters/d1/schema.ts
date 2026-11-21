@@ -473,4 +473,6 @@ export const deviceCodes = sqliteTable("chiakeo_device_codes", {
   encryptedToken: text("encrypted_token"),
   /** Lan cuoi CLI hoi, de tra slow_down khi hoi nhanh hon `interval`. */
   lastPolledAt: text("last_polled_at"),
+  /** Nguoi dung bam Tu choi: CLI nhan access_denied o lan hoi tiep theo. */
+  deniedAt: text("denied_at"),
 });
