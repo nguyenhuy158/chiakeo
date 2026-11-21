@@ -838,10 +838,10 @@ try {
   await cliRun("add-expense", "CLI Trip", "Bia", "90k", "--payer", "An");
   assert.match(
     await cliRun("game", "CLI Trip"),
-    /Binh chuyển 45\.000 ₫ cho An/,
+    /Binh sends 45\.000 ₫ to An/,
   );
   await cliRun("pay", "CLI Trip", "Binh", "An", "45k");
-  assert.doesNotMatch(await cliRun("game", "CLI Trip"), /chuyển/);
+  assert.doesNotMatch(await cliRun("game", "CLI Trip"), /sends/);
   await cliRun("down");
   await assert.rejects(cliRun("whoami"));
   ok("CLI binary: up, create game, add expense, pay, down");
