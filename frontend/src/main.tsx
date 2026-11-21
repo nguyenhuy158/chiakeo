@@ -1,6 +1,7 @@
 import { registerSW } from "virtual:pwa-register";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { RouterProvider } from "@tanstack/react-router";
+import { CircleCheck, CircleX, Info, TriangleAlert } from "lucide-react";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { Toaster } from "sonner";
@@ -36,9 +37,14 @@ const queryClient = new QueryClient({
   },
 });
 
-/** Cao hon thanh dieu huong duoi cua trang cuoc choi tren dien thoai de toast khong che no. */
-const MOBILE_TOAST_OFFSET = { bottom: "5rem" };
+const TOAST_ICON_SIZE = 18;
 
+const TOAST_ICONS = {
+  success: <CircleCheck size={TOAST_ICON_SIZE} aria-hidden="true" />,
+  error: <CircleX size={TOAST_ICON_SIZE} aria-hidden="true" />,
+  info: <Info size={TOAST_ICON_SIZE} aria-hidden="true" />,
+  warning: <TriangleAlert size={TOAST_ICON_SIZE} aria-hidden="true" />,
+};
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
@@ -47,8 +53,8 @@ createRoot(document.getElementById("root")!).render(
           <RouterProvider router={router} />
         </ConfirmProvider>
         <Toaster
-          position="bottom-center"
-          mobileOffset={MOBILE_TOAST_OFFSET}
+          position="top-center"
+          icons={TOAST_ICONS}
           theme="system"
           richColors
         />
