@@ -248,6 +248,12 @@ export function fakeRepo(
       update: unused("contacts.update"),
       delete: unused("contacts.delete"),
     },
+    bundles: {
+      listByOwner: unused("bundles.listByOwner"),
+      getById: unused("bundles.getById"),
+      insert: unused("bundles.insert"),
+      delete: unused("bundles.delete"),
+    },
     paymentRequests: {
       insert: unused("paymentRequests.insert"),
       findByCode: unused("paymentRequests.findByCode"),

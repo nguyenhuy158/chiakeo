@@ -36,6 +36,14 @@ export type GameChanges = {
   tags?: string[];
 };
 
+export type BundleRow = {
+  id: string;
+  ownerUserId: string;
+  name: string;
+  createdAt: string;
+  gameIds: string[];
+};
+
 export type UserPreferenceRow = {
   key: string;
   /** JSON cua gia tri; tang tren tu parse va bo qua dong hong. */
@@ -415,6 +423,12 @@ export type GameRepository = {
       updatedAt: string,
     ): Promise<void>;
     delete(contactId: string): Promise<void>;
+  };
+  bundles: {
+    listByOwner(userId: string): Promise<BundleRow[]>;
+    getById(bundleId: string): Promise<BundleRow | null>;
+    insert(row: BundleRow): Promise<void>;
+    delete(bundleId: string): Promise<void>;
   };
   paymentRequests: {
     insert(row: PaymentRequestRow): Promise<void>;
