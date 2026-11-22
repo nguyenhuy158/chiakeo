@@ -16,6 +16,8 @@ function gameRow(overrides: Partial<GameRow> = {}): GameRow {
     name: "Cầu lông",
     settlementMode: "host",
     settlementHostId: "",
+    location: "",
+    tags: [],
     createdAt: "2026-08-01T00:00:00.000Z",
     updatedAt: "2026-08-01T00:00:00.000Z",
     deletedAt: null,

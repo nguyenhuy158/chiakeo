@@ -130,6 +130,9 @@ export type ApiGameDetail = {
   settlementMode: SettlementMode;
   /** Dau moi da chon cho che do "pick"; rong la chua chon. */
   settlementHostId: string;
+  /** Dia diem choi; rong la chua nhap. */
+  location: string;
+  tags: string[];
   createdAt: string;
   /** Luc cuoc choi duoc dong; null la dang choi. */
   closedAt: string | null;

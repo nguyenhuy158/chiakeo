@@ -15,6 +15,7 @@ import {
   DEFAULT_SETTLEMENT_MODE,
   QUICK_PARTICIPANT_PREFIX,
   TRASH_RETENTION_DAYS,
+  uniqueTags,
 } from "../../../../shared/schemas";
 import { createGameCode, createId, nowIso } from "../../lib/ids";
 import type {
@@ -31,6 +32,7 @@ import {
 } from "./game-detail";
 import { recordEvent } from "./game-events";
 import { loadPaidProgress } from "./game-paid-progress";
+import { rememberTags } from "./user-preferences";
 
 /** Ma loi tra ve khi trang thai dong khong khop voi thao tac. */
 export const GAME_ALREADY_CLOSED = "game_already_closed";
@@ -162,6 +164,8 @@ export async function createGame(
     name: input.name,
     settlementMode: input.settlementMode ?? DEFAULT_SETTLEMENT_MODE,
     settlementHostId: input.settlementHostId ?? "",
+    location: "",
+    tags: [],
     createdAt: now,
     updatedAt: now,
     deletedAt: null,
@@ -220,12 +224,15 @@ export async function updateGame(
     ...(input.settlementHostId === undefined
       ? {}
       : { settlementHostId: input.settlementHostId }),
+    ...(input.location === undefined ? {} : { location: input.location }),
+    ...(input.tags === undefined ? {} : { tags: uniqueTags(input.tags) }),
   };
 
   if (Object.keys(changes).length === 0) throw new InvalidInputError();
 
   const previousName = game.name;
   await repo.games.update(game.id, changes, nowIso());
+  if (changes.tags) await rememberTags(repo, userId, changes.tags);
 
   if (changes.name !== undefined && changes.name !== previousName) {
     await recordEvent(repo, game.id, {
@@ -287,6 +294,8 @@ export async function duplicateGame(
     name: `${source.name} (bản sao)`,
     settlementMode: source.settlementMode,
     settlementHostId: newIdByOldId.get(source.settlementHostId) || "",
+    location: source.location,
+    tags: source.tags,
     createdAt: now,
     updatedAt: now,
     deletedAt: null,

@@ -59,6 +59,7 @@ import { useConfirm } from "../components/ConfirmDialog";
 import { CopyMenu } from "../components/CopyMenu";
 import { ExpensePanel } from "../components/ExpensePanel";
 import { GameDashboard } from "../components/GameDashboard";
+import { GameMetaBar } from "../components/GameMetaBar";
 import { GameSettingsPanel } from "../components/GameSettingsPanel";
 import { HistoryPanel } from "../components/HistoryPanel";
 import { type GameSection, MobileGameNav } from "../components/MobileGameNav";
@@ -672,6 +673,13 @@ export function GamePage() {
               </button>
             </div>
           )}
+          <div className="mt-1">
+            <GameMetaBar
+              gameId={game.id}
+              location={game.location}
+              tags={game.tags}
+            />
+          </div>
         </div>
         {/* Desktop: hai nut chinh, phan con lai nam trong menu. */}
         <div className="hidden items-center justify-end gap-2 lg:flex">

@@ -30,6 +30,7 @@ describe("user preferences", () => {
         summaryShowAvatar: true,
         roundDownRefunds: false,
         hideSettledGames: false,
+        tags: [],
       },
     });
   });
@@ -42,6 +43,7 @@ describe("user preferences", () => {
         summaryShowAvatar: true,
         roundDownRefunds: false,
         hideSettledGames: false,
+        tags: [],
       },
     });
   });
@@ -57,6 +59,7 @@ describe("user preferences", () => {
         summaryShowAvatar: true,
         roundDownRefunds: false,
         hideSettledGames: false,
+        tags: [],
       },
     });
   });
@@ -73,6 +76,7 @@ describe("user preferences", () => {
         summaryShowAvatar: true,
         roundDownRefunds: false,
         hideSettledGames: false,
+        tags: [],
       },
     });
     expect(stored.get("summaryShowQr")).toBe("false");

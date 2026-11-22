@@ -3,6 +3,7 @@ import { ArrowLeft } from "lucide-react";
 import { GameSettingsPanel } from "../components/GameSettingsPanel";
 import { McpTokenPanel } from "../components/McpTokenPanel";
 import { ProfileNamePanel } from "../components/ProfileNamePanel";
+import { TagPanel } from "../components/TagPanel";
 
 /** Trang cai dat cua tai khoan. */
 export function SettingsPage() {
@@ -31,6 +32,7 @@ export function SettingsPage() {
           <GameSettingsPanel />
         </div>
       </section>
+      <TagPanel />
       <McpTokenPanel />
     </div>
   );

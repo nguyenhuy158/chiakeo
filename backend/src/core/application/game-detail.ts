@@ -215,6 +215,8 @@ export async function loadGameDetail(
     name: game.name,
     settlementMode: toSettlementMode(game.settlementMode),
     settlementHostId: game.settlementHostId || "",
+    location: game.location,
+    tags: game.tags,
     createdAt: game.createdAt,
     closedAt,
     closeMode: toCloseMode(closeMode),

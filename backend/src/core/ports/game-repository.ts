@@ -15,6 +15,8 @@ export type GameRow = {
   /** Text tu do trong DB; application chuan hoa ve SettlementMode. */
   settlementMode: string;
   settlementHostId: string;
+  location: string;
+  tags: string[];
   createdAt: string;
   updatedAt: string;
   /** Luc bi cho vao thung rac; null la dang dung. */
@@ -30,6 +32,8 @@ export type GameChanges = {
   name?: string;
   settlementMode?: SettlementMode;
   settlementHostId?: string;
+  location?: string;
+  tags?: string[];
 };
 
 export type UserPreferenceRow = {

@@ -567,6 +567,19 @@ export function useAddTransfer(gameId: string) {
   );
 }
 
+/** Dia diem/tag; server nho tag moi vao danh sach cua user nen lam moi preferences. */
+export function useUpdateGameMeta(gameId: string) {
+  const queryClient = useQueryClient();
+
+  return useGameDetailMutation(
+    async (input: { location: string; tags: string[] }) => {
+      const detail = await getGameApi().games.update(gameId, input);
+      await queryClient.invalidateQueries({ queryKey: preferenceKeys.all });
+      return detail;
+    },
+  );
+}
+
 export function useRenameGame(gameId: string) {
   return useGameDetailMutation(
     (name: string) => getGameApi().games.update(gameId, { name }),

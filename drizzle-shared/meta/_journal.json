@@ -57,6 +57,13 @@
       "when": 1795283219188,
       "tag": "0007_device_denied",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1795357652110,
+      "tag": "0008_game_location_tags",
+      "breakpoints": true
     }
   ]
 }
