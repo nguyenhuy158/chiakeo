@@ -36,4 +36,19 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - name: Can we reach the DB?
+        run: |
+          node --input-type=module -e '
+          import { createClient } from "@libsql/client";
+          const url = process.env.TURSO_DATABASE_URL;
+          const token = process.env.TURSO_AUTH_TOKEN;
+          console.log("url scheme ok:", url.startsWith("libsql://"), "| url has space:", /\s/.test(url), "| token has space:", /\s/.test(token));
+          try {
+            const client = createClient({ url, authToken: token });
+            await client.execute("select 1");
+            console.log("DB reachable");
+          } catch (error) {
+            console.error("DB error:", error.message);
+            process.exit(1);
+          }'
       - run: pnpm db:migrate:remote
