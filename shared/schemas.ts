@@ -6,6 +6,10 @@ import {
 } from "./shuttles";
 
 export const GAME_NAME_MAX_LENGTH = 100;
+export const GAME_LOCATION_MAX_LENGTH = 100;
+export const TAG_MAX_LENGTH = 30;
+export const MAX_TAGS_PER_GAME = 10;
+export const MAX_USER_TAGS = 50;
 /** Do dai toi da cua mot id do server sinh (`createId`), du de chan rac. */
 export const ID_MAX_LENGTH = 64;
 export const PARTICIPANT_NAME_MAX_LENGTH = 50;
@@ -59,6 +63,22 @@ export const settlementModeSchema = z.enum(SETTLEMENT_MODES);
 export const shuttleEntryKindSchema = z.enum(SHUTTLE_ENTRY_KINDS);
 
 const gameNameSchema = z.string().trim().min(1).max(GAME_NAME_MAX_LENGTH);
+const gameLocationSchema = z.string().trim().max(GAME_LOCATION_MAX_LENGTH);
+const tagSchema = z.string().trim().min(1).max(TAG_MAX_LENGTH);
+
+/** Bo tag trung (khong phan biet hoa thuong), giu ten dau tien va thu tu. */
+export function uniqueTags(tags: string[]) {
+  const seen = new Set<string>();
+  return tags.filter((tag) => {
+    const key = tag.toLowerCase();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+const tagListSchema = (max: number) =>
+  z.array(tagSchema).max(max).transform(uniqueTags);
 /**
  * Dau moi cho che do "pick". Chuoi rong la chua chon; luc do va khi nguoi duoc
  * chon khong con trong cuoc thi quay ve nguoi ung nhieu nhat.
@@ -92,6 +112,8 @@ export const gameUpdateSchema = z
     name: gameNameSchema,
     settlementMode: settlementModeSchema,
     settlementHostId: settlementHostIdSchema,
+    location: gameLocationSchema,
+    tags: tagListSchema(MAX_TAGS_PER_GAME),
   })
   .partial();
 
@@ -281,6 +303,8 @@ export const userPreferencesSchema = z.object({
   roundDownRefunds: z.boolean(),
   /** An cuoc choi da thu tien xong khoi danh sach dang choi. */
   hideSettledGames: z.boolean(),
+  /** Tag da tao, dung lai khi gan cho cuoc choi. */
+  tags: tagListSchema(MAX_USER_TAGS),
 });
 
 export const DEFAULT_USER_PREFERENCES: UserPreferences = {
@@ -288,6 +312,7 @@ export const DEFAULT_USER_PREFERENCES: UserPreferences = {
   summaryShowAvatar: true,
   roundDownRefunds: false,
   hideSettledGames: false,
+  tags: [],
 };
 
 export const USER_PREFERENCE_KEYS = Object.keys(

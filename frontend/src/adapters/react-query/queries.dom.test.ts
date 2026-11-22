@@ -27,8 +27,6 @@ import {
   useAiScanReceipt,
   useAiSuggestExpense,
   useApproveDeviceLogin,
-  useDenyDeviceLogin,
-  useLookupDeviceLogin,
   useArchivedGames,
   useArchiveGame,
   useClosedGames,
@@ -40,10 +38,12 @@ import {
   useCreatePayment,
   useDeleteContact,
   useDeleteGame,
+  useDenyDeviceLogin,
   useDuplicateGame,
   useGame,
   useGameEvents,
   useGames,
+  useLookupDeviceLogin,
   useMcpTokens,
   usePaymentOptions,
   usePaymentRequest,
@@ -76,6 +76,7 @@ import {
   useUndoGameEvent,
   useUpdateContact,
   useUpdateExpense,
+  useUpdateGameMeta,
   useUpdateParticipant,
   useUpdatePhoto,
   useUpdatePreferences,
@@ -197,6 +198,21 @@ describe("React Query game mutations", () => {
     expect(
       (client.getQueryData(gameKeys.detail("game")) as ApiGameDetail).name,
     ).toBe("Tên cũ");
+  });
+
+  it("lưu địa điểm và tag rồi làm mới danh sách tag của user", async () => {
+    const update = vi.fn().mockResolvedValue(detail("Kèo"));
+    provideGameApi({ games: { update } } as unknown as GameApiPort);
+    const refresh = vi.spyOn(client, "invalidateQueries");
+    const current = mount(() => useUpdateGameMeta("game"));
+    await act(async () => {
+      await current().mutateAsync({ location: "Sân Q7", tags: ["Cầu lông"] });
+    });
+    expect(update).toHaveBeenCalledWith("game", {
+      location: "Sân Q7",
+      tags: ["Cầu lông"],
+    });
+    expect(refresh).toHaveBeenCalledWith({ queryKey: ["preferences"] });
   });
 
   it("sắp lại người chơi trong cache", async () => {

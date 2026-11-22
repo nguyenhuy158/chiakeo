@@ -89,6 +89,11 @@ export const games = sqliteTable(
     settlementMode: text("settlement_mode").notNull().default("p2p"),
     // Dau moi da chon cho che do "pick"; rong la chua chon.
     settlementHostId: text("settlement_host_id").notNull().default(""),
+    location: text("location").notNull().default(""),
+    tags: text("tags", { mode: "json" })
+      .$type<string[]>()
+      .notNull()
+      .default([]),
     createdAt: text("created_at").notNull(),
     updatedAt: text("updated_at").notNull(),
     /**

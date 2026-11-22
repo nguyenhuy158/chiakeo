@@ -99,6 +99,12 @@ vi.mock("../components/ExpensePanel", () => ({
     return "ExpensePanel";
   },
 }));
+vi.mock("../components/GameMetaBar", () => ({
+  GameMetaBar: (props: Record<string, unknown>) => {
+    mocks.props.GameMetaBar = props;
+    return "GameMetaBar";
+  },
+}));
 vi.mock("../components/GameSettingsPanel", () => ({
   GameSettingsPanel: () => "settings panel",
 }));
@@ -190,6 +196,8 @@ function game(overrides: Partial<ApiGameDetail> = {}): ApiGameDetail {
     name: "Cầu tối",
     settlementMode: "p2p",
     settlementHostId: "",
+    location: "",
+    tags: [],
     createdAt: "2026-01-01T00:00:00Z",
     closedAt: null,
     closeMode: "manual",
@@ -718,6 +726,16 @@ describe("GamePage", () => {
     expect(mocks.toast.success).toHaveBeenCalledWith(
       "Đã ghi nhận 2 khoản trả nợ",
     );
+  });
+
+  it("shows the place and tags of the game", () => {
+    mocks.game = game({ location: "Sân Q7", tags: ["Cầu lông"] });
+    render();
+    expect(mocks.props.GameMetaBar).toEqual({
+      gameId: "game-1",
+      location: "Sân Q7",
+      tags: ["Cầu lông"],
+    });
   });
 
   it("handles photos still loading", async () => {

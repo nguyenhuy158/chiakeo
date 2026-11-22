@@ -99,6 +99,36 @@ describe("game use cases", () => {
     });
   });
 
+  it("gắn địa điểm và tag, nhớ tag mới vào danh sách của người dùng", async () => {
+    const fake = createFakeRepo();
+    const saved = new Map<string, string>();
+    fake.repo.userPreferences.listByUser = async () =>
+      [...saved].map(([key, value]) => ({ key, value }));
+    fake.repo.userPreferences.upsert = async (_userId, key, value) => {
+      saved.set(key, value);
+    };
+    const detail = await updateGame(fake.repo, FAKE_OWNER, FAKE_GAME_ID, {
+      location: "Sân Q7",
+      tags: ["Cầu lông", "cầu lông", "Thứ 7"],
+    });
+    expect(detail.location).toBe("Sân Q7");
+    expect(detail.tags).toEqual(["Cầu lông", "Thứ 7"]);
+    expect(JSON.parse(saved.get("tags") || "[]")).toEqual([
+      "Cầu lông",
+      "Thứ 7",
+    ]);
+
+    saved.clear();
+    saved.set("tags", JSON.stringify(["Cầu lông", "Thứ 7"]));
+    await updateGame(fake.repo, FAKE_OWNER, FAKE_GAME_ID, {
+      tags: ["thứ 7"],
+    });
+    expect(JSON.parse(saved.get("tags") || "[]")).toEqual([
+      "Cầu lông",
+      "Thứ 7",
+    ]);
+  });
+
   it("từ chối sửa trống hoặc sửa cuộc không tồn tại", async () => {
     const fake = createFakeRepo();
     await expect(
@@ -118,7 +148,12 @@ describe("game use cases", () => {
   it("nhân bản người tham gia và tài khoản nhận nhưng không mang khoản chi sang", async () => {
     const fake = createFakeRepo({
       games: [
-        gameRow({ settlementMode: "pick", settlementHostId: "person-a" }),
+        gameRow({
+          settlementMode: "pick",
+          settlementHostId: "person-a",
+          location: "Sân Q7",
+          tags: ["Cầu lông"],
+        }),
       ],
       participants: [
         participantRow("person-a", "An"),
@@ -134,6 +169,8 @@ describe("game use cases", () => {
       ],
     });
     const detail = await duplicateGame(fake.repo, FAKE_OWNER, FAKE_GAME_ID);
+    expect(detail.location).toBe("Sân Q7");
+    expect(detail.tags).toEqual(["Cầu lông"]);
     expect(detail.id).not.toBe(FAKE_GAME_ID);
     expect(detail.name).toBe("Cầu lông (bản sao)");
     expect(detail.expenses).toEqual([]);

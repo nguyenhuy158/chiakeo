@@ -1,7 +1,9 @@
 import {
   DEFAULT_USER_PREFERENCES,
+  MAX_USER_TAGS,
   type UserPreferences,
   type UserPreferencesPatch,
+  uniqueTags,
   userPreferencesSchema,
 } from "../../../../shared/schemas";
 import { nowIso } from "../../lib/ids";
@@ -61,4 +63,19 @@ export async function updateUserPreferences(
   }
 
   return getUserPreferences(repo, userId);
+}
+
+/** Tag go luc gan cho cuoc choi tu vao danh sach tag cua user de dung lai. */
+export async function rememberTags(
+  repo: GameRepository,
+  userId: string,
+  tags: string[],
+) {
+  const { preferences } = await getUserPreferences(repo, userId);
+  const merged = uniqueTags([...preferences.tags, ...tags]).slice(
+    0,
+    MAX_USER_TAGS,
+  );
+  if (merged.length === preferences.tags.length) return;
+  await updateUserPreferences(repo, userId, { tags: merged });
 }
