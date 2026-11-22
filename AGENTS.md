@@ -233,6 +233,13 @@ curl https://chiakeo.huyab.cfd/api/health    # ok:false + hint = migration not a
 
 A mismatched commit means the build has not finished yet; wait and re-check.
 
+Prod migrations run by `.github/workflows/migrate.yml` on push to `main` when
+`drizzle-shared/` changes (repo secrets `TURSO_DATABASE_URL` and
+`TURSO_AUTH_TOKEN`). The deploy can finish before the migration, so every
+migration must be additive: add the column or table first, ship the code that
+uses it, and drop the old one in a later PR. Run it by hand with
+`pnpm db:migrate:remote` only if the workflow is down.
+
 CLI release: bump `version` in `cli/package.json` and merge the PR to `main`. `.github/workflows/publish-cli.yml` then publishes it to npm with the repo secret `NPM_TOKEN`, and skips it when that version is already on npm. Never publish by hand.
 
 ## Architecture Decisions & Pitfalls
