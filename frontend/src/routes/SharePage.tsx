@@ -18,7 +18,8 @@ import type { ShareSection } from "../../../shared/schemas";
 import { useShareView } from "../adapters/react-query/queries";
 import { AdaptiveSheet } from "../components/AdaptiveSheet";
 import { CopyMenu } from "../components/CopyMenu";
-import { SettlementTableCard } from "../components/SettlementTableCard";
+import { SharePaymentPanel } from "../components/SharePaymentPanel";
+import { ShareSummaryImage } from "../components/ShareSummaryImage";
 import { SharePhotoGallery } from "../components/SharePhotoGallery";
 import { ThemeToggle } from "../components/theme";
 import { EmptyState, GamePageSkeleton } from "../components/ui";
@@ -413,7 +414,7 @@ export function SharePage() {
     label: string;
     icon: typeof ListChecks;
   }> = [
-    { id: "summary", label: "Tổng hợp", icon: ListChecks },
+    { id: "summary", label: "Tổng kết", icon: ListChecks },
     { id: "expenses", label: "Chi tiêu", icon: ReceiptText },
     { id: "matrix", label: "Bảng chia", icon: Table2 },
     { id: "photos", label: "Ảnh", icon: Images },
@@ -504,14 +505,22 @@ export function SharePage() {
             </div>
           </>
         ) : currentTab === "summary" ? (
-          <div className="mx-auto w-full max-w-2xl">
-            <SettlementTableCard
-              participants={view.participants}
-              summary={view.summary}
-              settlementMode={view.settlementMode}
-              settlementHostId={view.settlementHostId}
-              roundDownRefunds={view.roundDownRefunds}
-            />
+          <div className="mx-auto flex h-full max-w-2xl flex-col gap-2">
+            <SharePaymentPanel token={token} participants={view.participants} />
+            <div className="min-h-0 flex-1">
+              <ShareSummaryImage
+                input={{
+                  code: view.code,
+                  name: view.name,
+                  participants: view.participants,
+                  expenses: view.expenses,
+                  summary: view.summary,
+                  settlementMode: view.settlementMode,
+                  settlementHostId: view.settlementHostId,
+                  roundDownRefunds: view.roundDownRefunds,
+                }}
+              />
+            </div>
           </div>
         ) : currentTab === "expenses" ? (
           <div className="mx-auto w-full max-w-2xl pb-4">
