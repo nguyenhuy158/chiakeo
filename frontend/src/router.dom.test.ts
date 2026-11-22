@@ -64,7 +64,7 @@ describe("router", () => {
     document.body.append(host);
     root = createRoot(host);
     expect(router).toBe(state.routerOptions);
-    expect(state.routes).toHaveLength(11);
+    expect(state.routes).toHaveLength(13);
     expect(state.routes.map((route) => route.path)).toEqual([
       undefined,
       "/login",
@@ -77,6 +77,8 @@ describe("router", () => {
       "/login/device",
       "/shuttles",
       "/fun",
+      "/bundles",
+      "/bundles/$bundleId",
     ]);
     for (const route of state.routes) {
       if (route.getParentRoute)
@@ -90,7 +92,7 @@ describe("router", () => {
     expect(host.textContent).toContain("Về trang chủ");
     render(rootRoute.errorComponent);
     expect(host.textContent).toContain("Có lỗi xảy ra");
-    expect(state.lazy).toHaveLength(7);
+    expect(state.lazy).toHaveLength(9);
     for (const loader of state.lazy) expect(await loader()).toBeDefined();
   });
 });

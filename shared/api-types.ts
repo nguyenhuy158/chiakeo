@@ -318,3 +318,32 @@ export type ApiDeviceLookup = {
   name: string;
   user_code: string;
 };
+
+export type ApiBundleGame = { id: string; code: string; name: string };
+
+export type ApiBundleSummary = {
+  id: string;
+  name: string;
+  createdAt: string;
+  gameCount: number;
+};
+
+export type ApiBundleDebt = {
+  gameId: string;
+  gameName: string;
+  toName: string;
+  amount: number;
+};
+
+export type ApiBundlePerson = {
+  name: string;
+  total: number;
+  debts: ApiBundleDebt[];
+};
+
+export type ApiBundleDetail = {
+  id: string;
+  name: string;
+  games: ApiBundleGame[];
+  people: ApiBundlePerson[];
+};

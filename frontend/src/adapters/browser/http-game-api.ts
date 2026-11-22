@@ -62,6 +62,14 @@ export function createHttpGameApi(): GameApiPort {
     crossBalances: {
       get: () => request(`/api/cross-balances`),
     },
+    bundles: {
+      list: () => request(`/api/bundles`),
+      detail: (bundleId) => request(`/api/bundles/${bundleId}`),
+      create: (input) => post(`/api/bundles`, input),
+      settle: (bundleId, input) =>
+        post(`/api/bundles/${bundleId}/settle`, input),
+      remove: (bundleId) => destroy(`/api/bundles/${bundleId}`),
+    },
     gameEvents: {
       list: (gameId) => request(`/api/games/${gameId}/events`),
       undo: (eventId) => post(`/api/events/${eventId}/undo`),
