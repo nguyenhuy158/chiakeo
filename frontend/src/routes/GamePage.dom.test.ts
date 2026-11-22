@@ -198,6 +198,7 @@ function game(overrides: Partial<ApiGameDetail> = {}): ApiGameDetail {
     settlementHostId: "",
     location: "",
     tags: [],
+    shareShow: [],
     createdAt: "2026-01-01T00:00:00Z",
     closedAt: null,
     closeMode: "manual",

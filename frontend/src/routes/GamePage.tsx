@@ -830,7 +830,7 @@ export function GamePage() {
           {deleteAction}
         </div>
         <div className="mt-3 border-t border-border pt-3">
-          <GameSettingsPanel />
+          <GameSettingsPanel game={game} />
         </div>
       </AdaptiveSheet>
 
@@ -839,7 +839,7 @@ export function GamePage() {
         onClose={() => setSettingsOpen(false)}
         title="Cài đặt"
       >
-        <GameSettingsPanel />
+        <GameSettingsPanel game={game} />
       </AdaptiveSheet>
     </div>
   );

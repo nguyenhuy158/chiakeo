@@ -31,6 +31,18 @@ describe("gameUpdateSchema", () => {
     ).toBe(false);
     expect(gameUpdateSchema.safeParse({ name: "  " }).success).toBe(false);
   });
+
+  it("chuan hoa danh sach phan hien tren link chia se", () => {
+    expect(
+      gameUpdateSchema.parse({ shareShow: ["photos", "expenses", "photos"] }),
+    ).toEqual({ shareShow: ["expenses", "photos"] });
+    expect(gameUpdateSchema.parse({ shareShow: [] })).toEqual({
+      shareShow: [],
+    });
+    expect(gameUpdateSchema.safeParse({ shareShow: ["summary"] }).success).toBe(
+      false,
+    );
+  });
 });
 
 describe("gameInputSchema", () => {

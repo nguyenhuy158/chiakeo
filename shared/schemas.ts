@@ -77,6 +77,15 @@ export function uniqueTags(tags: string[]) {
   });
 }
 
+export const SHARE_SECTIONS = ["expenses", "matrix", "photos"] as const;
+export type ShareSection = (typeof SHARE_SECTIONS)[number];
+const shareSectionListSchema = z
+  .array(z.enum(SHARE_SECTIONS))
+  .max(SHARE_SECTIONS.length)
+  .transform((sections) =>
+    SHARE_SECTIONS.filter((id) => sections.includes(id)),
+  );
+
 const tagListSchema = (max: number) =>
   z.array(tagSchema).max(max).transform(uniqueTags);
 /**
@@ -114,6 +123,7 @@ export const gameUpdateSchema = z
     settlementHostId: settlementHostIdSchema,
     location: gameLocationSchema,
     tags: tagListSchema(MAX_TAGS_PER_GAME),
+    shareShow: shareSectionListSchema,
   })
   .partial();
 
@@ -333,12 +343,6 @@ export const userPreferencesSchema = z.object({
   hideSettledGames: z.boolean(),
   /** Tag da tao, dung lai khi gan cho cuoc choi. */
   tags: tagListSchema(MAX_USER_TAGS),
-  /** Link chia se: hien tab Tong ket (so du + cac khoan chi). */
-  shareShowSummary: z.boolean(),
-  /** Link chia se: hien tab Bang chia. */
-  shareShowMatrix: z.boolean(),
-  /** Link chia se: hien tab Anh. */
-  shareShowPhotos: z.boolean(),
 });
 
 export const DEFAULT_USER_PREFERENCES: UserPreferences = {
@@ -347,9 +351,6 @@ export const DEFAULT_USER_PREFERENCES: UserPreferences = {
   roundDownRefunds: false,
   hideSettledGames: false,
   tags: [],
-  shareShowSummary: false,
-  shareShowMatrix: false,
-  shareShowPhotos: false,
 };
 
 export const USER_PREFERENCE_KEYS = Object.keys(

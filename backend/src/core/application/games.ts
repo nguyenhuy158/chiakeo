@@ -166,6 +166,7 @@ export async function createGame(
     settlementHostId: input.settlementHostId ?? "",
     location: "",
     tags: [],
+    shareShow: [],
     createdAt: now,
     updatedAt: now,
     deletedAt: null,
@@ -226,6 +227,7 @@ export async function updateGame(
       : { settlementHostId: input.settlementHostId }),
     ...(input.location === undefined ? {} : { location: input.location }),
     ...(input.tags === undefined ? {} : { tags: uniqueTags(input.tags) }),
+    ...(input.shareShow === undefined ? {} : { shareShow: input.shareShow }),
   };
 
   if (Object.keys(changes).length === 0) throw new InvalidInputError();
@@ -296,6 +298,7 @@ export async function duplicateGame(
     settlementHostId: newIdByOldId.get(source.settlementHostId) || "",
     location: source.location,
     tags: source.tags,
+    shareShow: source.shareShow,
     createdAt: now,
     updatedAt: now,
     deletedAt: null,

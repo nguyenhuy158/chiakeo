@@ -5,7 +5,7 @@ import type {
   ContactBookRow,
   ContactSourceRow,
 } from "../../../../shared/contacts";
-import type { SettlementMode } from "../../../../shared/schemas";
+import type { SettlementMode, ShareSection } from "../../../../shared/schemas";
 
 export type GameRow = {
   id: string;
@@ -17,6 +17,8 @@ export type GameRow = {
   settlementHostId: string;
   location: string;
   tags: string[];
+  /** Phan nao ngoai bang tong hop duoc hien tren link chia se. */
+  shareShow: ShareSection[];
   createdAt: string;
   updatedAt: string;
   /** Luc bi cho vao thung rac; null la dang dung. */
@@ -34,6 +36,7 @@ export type GameChanges = {
   settlementHostId?: string;
   location?: string;
   tags?: string[];
+  shareShow?: ShareSection[];
 };
 
 export type UserPreferenceRow = {

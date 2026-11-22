@@ -4,6 +4,7 @@ import {
   CircleCheckBig,
   Images,
   ListChecks,
+  ReceiptText,
   Square,
   Table2,
 } from "lucide-react";
@@ -13,18 +14,18 @@ import type {
   ApiParticipant,
   ApiSummary,
 } from "../../../shared/api-types";
+import type { ShareSection } from "../../../shared/schemas";
 import { useShareView } from "../adapters/react-query/queries";
 import { AdaptiveSheet } from "../components/AdaptiveSheet";
 import { CopyMenu } from "../components/CopyMenu";
-import { GameDashboard } from "../components/GameDashboard";
-import { SharePaymentPanel } from "../components/SharePaymentPanel";
+import { SettlementTableCard } from "../components/SettlementTableCard";
 import { SharePhotoGallery } from "../components/SharePhotoGallery";
 import { ThemeToggle } from "../components/theme";
 import { EmptyState, GamePageSkeleton } from "../components/ui";
 import { formatMoney } from "../core/domain/money";
 import { PagedList } from "../ui/PagedList";
 
-type ShareTab = "summary" | "matrix" | "photos";
+type ShareTab = "summary" | ShareSection;
 
 type ExpenseMatrixProps = {
   participants: ApiParticipant[];
@@ -404,19 +405,25 @@ export function SharePage() {
   const participantById = new Map(
     view.participants.map((participant) => [participant.id, participant]),
   );
+  const realExpenses = view.expenses.filter(
+    (expense) => expense.kind !== "transfer" && !expense.excluded,
+  );
   const allTabs: Array<{
     id: ShareTab;
     label: string;
     icon: typeof ListChecks;
   }> = [
-    { id: "summary", label: "Tổng kết", icon: ListChecks },
+    { id: "summary", label: "Tổng hợp", icon: ListChecks },
+    { id: "expenses", label: "Chi tiêu", icon: ReceiptText },
     { id: "matrix", label: "Bảng chia", icon: Table2 },
     { id: "photos", label: "Ảnh", icon: Images },
   ];
-  const tabs = allTabs.filter((tab) => view.show[tab.id]);
+  const tabs = allTabs.filter(
+    (tab) => tab.id === "summary" || view.shareShow.includes(tab.id),
+  );
   const currentTab = tabs.some((tab) => tab.id === activeTab)
     ? activeTab
-    : tabs[0]?.id;
+    : "summary";
 
   return (
     <div className="mx-auto flex h-dvh w-full max-w-6xl flex-col gap-2 overflow-hidden px-4 py-3 sm:gap-4 sm:px-5 sm:py-4">
@@ -483,11 +490,7 @@ export function SharePage() {
       )}
 
       <div className="min-h-0 flex-1 overflow-hidden md:overflow-auto">
-        {currentTab === undefined ? (
-          <div className="mx-auto w-full max-w-2xl">
-            <SharePaymentPanel token={token} participants={view.participants} />
-          </div>
-        ) : currentTab === "photos" ? (
+        {currentTab === "photos" ? (
           <>
             <div className="h-full md:hidden">
               <SharePhotoGallery
@@ -501,98 +504,57 @@ export function SharePage() {
             </div>
           </>
         ) : currentTab === "summary" ? (
-          <>
-            <div className="flex h-full min-h-0 flex-col gap-2 md:hidden">
-              <SharePaymentPanel
-                token={token}
-                participants={view.participants}
-              />
-              <div className="min-h-0 flex-1">
-                <GameDashboard
-                  compact
-                  code={view.code}
-                  name={view.name}
-                  participants={view.participants}
-                  expenseCount={
-                    view.expenses.filter(
-                      (expense) =>
-                        expense.kind !== "transfer" && !expense.excluded,
-                    ).length
-                  }
-                  summary={view.summary}
-                  settlementMode={view.settlementMode}
-                  settlementHostId={view.settlementHostId}
-                  expenses={view.expenses}
-                />
-              </div>
-            </div>
-            <div className="mx-auto hidden max-w-2xl space-y-5 pb-4 md:block">
-              <SharePaymentPanel
-                token={token}
-                participants={view.participants}
-              />
-              <GameDashboard
-                code={view.code}
-                name={view.name}
-                participants={view.participants}
-                expenseCount={
-                  view.expenses.filter(
-                    (expense) =>
-                      expense.kind !== "transfer" && !expense.excluded,
-                  ).length
-                }
-                summary={view.summary}
-                settlementMode={view.settlementMode}
-                settlementHostId={view.settlementHostId}
-                expenses={view.expenses}
-              />
-
-              <section className="rounded-lg border border-border bg-surface p-4 shadow-sm">
-                <h3 className="text-lg font-semibold text-stone-950 dark:text-stone-50">
-                  Các khoản chi
-                </h3>
-                <div className="mt-4 space-y-2">
-                  {view.expenses.length > 0 ? (
-                    view.expenses
-                      .filter(
-                        (expense) =>
-                          expense.kind !== "transfer" && !expense.excluded,
-                      )
-                      .map((expense) => {
-                        const payer = participantById.get(
-                          expense.payerParticipantId,
-                        );
-                        return (
-                          <div
-                            key={expense.id}
-                            className="rounded-md border border-border p-3"
-                          >
-                            <div className="flex items-start justify-between gap-3">
-                              <div className="min-w-0">
-                                <p className="truncate text-sm font-semibold text-stone-950 dark:text-stone-50">
-                                  {expense.title}
-                                </p>
-                                <p className="mt-1 text-xs text-fg-muted">
-                                  {payer?.name || "Không rõ"} trả, chia{" "}
-                                  {expense.splitParticipantIds.length} người
-                                </p>
-                              </div>
-                              <span className="shrink-0 text-sm font-semibold text-stone-950 tabular dark:text-stone-50">
-                                {formatMoney(expense.amount)}
-                              </span>
-                            </div>
+          <div className="mx-auto w-full max-w-2xl">
+            <SettlementTableCard
+              participants={view.participants}
+              summary={view.summary}
+              settlementMode={view.settlementMode}
+              settlementHostId={view.settlementHostId}
+              roundDownRefunds={view.roundDownRefunds}
+            />
+          </div>
+        ) : currentTab === "expenses" ? (
+          <div className="mx-auto w-full max-w-2xl pb-4">
+            <section className="rounded-lg border border-border bg-surface p-4 shadow-sm">
+              <h3 className="text-lg font-semibold text-stone-950 dark:text-stone-50">
+                Các khoản chi
+              </h3>
+              <div className="mt-4 space-y-2">
+                {realExpenses.length > 0 ? (
+                  realExpenses.map((expense) => {
+                    const payer = participantById.get(
+                      expense.payerParticipantId,
+                    );
+                    return (
+                      <div
+                        key={expense.id}
+                        className="rounded-md border border-border p-3"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-semibold text-stone-950 dark:text-stone-50">
+                              {expense.title}
+                            </p>
+                            <p className="mt-1 text-xs text-fg-muted">
+                              {payer?.name || "Không rõ"} trả, chia{" "}
+                              {expense.splitParticipantIds.length} người
+                            </p>
                           </div>
-                        );
-                      })
-                  ) : (
-                    <p className="text-sm text-fg-muted">
-                      Chưa có khoản chi nào.
-                    </p>
-                  )}
-                </div>
-              </section>
-            </div>
-          </>
+                          <span className="shrink-0 text-sm font-semibold text-stone-950 tabular dark:text-stone-50">
+                            {formatMoney(expense.amount)}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <p className="text-sm text-fg-muted">
+                    Chưa có khoản chi nào.
+                  </p>
+                )}
+              </div>
+            </section>
+          </div>
         ) : (
           <>
             <ExpenseMatrixCompact

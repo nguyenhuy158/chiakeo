@@ -1,22 +1,57 @@
+import type { ShareSection } from "../../../shared/schemas";
 import {
   usePreferences,
   useUpdatePreferences,
+  useUpdateShareShow,
 } from "../adapters/react-query/queries";
 import { Switch } from "./ui";
 
+const SHARE_OPTIONS: Array<{ id: ShareSection; label: string }> = [
+  { id: "expenses", label: "Các khoản chi" },
+  { id: "matrix", label: "Bảng chia" },
+  { id: "photos", label: "Ảnh" },
+];
+
+type GameSettingsGame = { id: string; shareShow: ShareSection[] };
+
+function ShareOptions({
+  gameId,
+  shareShow,
+}: { gameId: string } & Pick<GameSettingsGame, "shareShow">) {
+  const updateShareShow = useUpdateShareShow(gameId);
+
+  return (
+    <>
+      <p className="text-sm font-medium">Link chia sẻ hiện thêm (cuộc này)</p>
+      {SHARE_OPTIONS.map((option) => (
+        <Switch
+          key={option.id}
+          checked={shareShow.includes(option.id)}
+          onChange={(next) =>
+            updateShareShow.mutate(
+              next
+                ? [...shareShow, option.id]
+                : shareShow.filter((id) => id !== option.id),
+            )
+          }
+          label={option.label}
+        />
+      ))}
+    </>
+  );
+}
+
 /**
  * Cac tuy chon luu theo tai khoan (dung chung moi cuoc choi), gom mot cho de
- * chinh cho tien thay vi rai rac o tung the.
+ * chinh cho tien thay vi rai rac o tung the. Co `game` thi them tuy chon rieng
+ * cua cuoc choi do (link chia se hien gi).
  */
-export function GameSettingsPanel() {
+export function GameSettingsPanel({ game }: { game?: GameSettingsGame }) {
   const {
     summaryShowQr,
     summaryShowAvatar,
     roundDownRefunds,
     hideSettledGames,
-    shareShowSummary,
-    shareShowMatrix,
-    shareShowPhotos,
   } = usePreferences();
   const updatePreferences = useUpdatePreferences();
 
@@ -48,24 +83,7 @@ export function GameSettingsPanel() {
         }
         label="Hiện avatar trước tên trên ảnh"
       />
-      <p className="text-sm font-medium">Link chia sẻ hiện thêm</p>
-      <Switch
-        checked={shareShowSummary}
-        onChange={(next) =>
-          updatePreferences.mutate({ shareShowSummary: next })
-        }
-        label="Tổng kết và các khoản chi"
-      />
-      <Switch
-        checked={shareShowMatrix}
-        onChange={(next) => updatePreferences.mutate({ shareShowMatrix: next })}
-        label="Bảng chia"
-      />
-      <Switch
-        checked={shareShowPhotos}
-        onChange={(next) => updatePreferences.mutate({ shareShowPhotos: next })}
-        label="Ảnh"
-      />
+      {game && <ShareOptions gameId={game.id} shareShow={game.shareShow} />}
     </div>
   );
 }

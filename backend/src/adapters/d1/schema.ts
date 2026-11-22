@@ -94,6 +94,10 @@ export const games = sqliteTable(
       .$type<string[]>()
       .notNull()
       .default([]),
+    shareShow: text("share_show", { mode: "json" })
+      .$type<import("../../../../shared/schemas").ShareSection[]>()
+      .notNull()
+      .default([]),
     createdAt: text("created_at").notNull(),
     updatedAt: text("updated_at").notNull(),
     /**

@@ -1,0 +1,1 @@
+ALTER TABLE `chiakeo_games` ADD `share_show` text DEFAULT '[]' NOT NULL;

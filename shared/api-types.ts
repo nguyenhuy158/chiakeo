@@ -1,7 +1,7 @@
 import type { ResolvedAiExpense } from "./ai";
 import type { ExpenseCategory } from "./expense-categories";
 import type { CloseModeValue } from "./game-closing";
-import type { McpScope, SettlementMode } from "./schemas";
+import type { McpScope, SettlementMode, ShareSection } from "./schemas";
 import type { ShuttleEntryKind } from "./shuttles";
 import type {
   BalanceRow,
@@ -133,6 +133,7 @@ export type ApiGameDetail = {
   /** Dia diem choi; rong la chua nhap. */
   location: string;
   tags: string[];
+  shareShow: ShareSection[];
   createdAt: string;
   /** Luc cuoc choi duoc dong; null la dang choi. */
   closedAt: string | null;
@@ -153,8 +154,10 @@ export type ApiShareView = {
   settlementHostId: string;
   /** Luc cuoc choi duoc dong; null la dang choi. Nguoi xem link chi doc. */
   closedAt: string | null;
-  /** Tab nao chu cuoc choi cho hien tren link chia se (mac dinh tat ca tat). */
-  show: { summary: boolean; matrix: boolean; photos: boolean };
+  /** Phan chu cuoc choi cho hien them tren link chia se (mac dinh khong co). */
+  shareShow: ShareSection[];
+  /** Tuy chon cua chu: host khong hoan phan le. */
+  roundDownRefunds: boolean;
   participants: ApiParticipant[];
   expenses: ApiExpense[];
   summary: ApiSummary;

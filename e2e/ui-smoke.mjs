@@ -538,21 +538,23 @@ try {
     0,
     "share page must hide the tabs until the owner turns them on",
   );
-  await page.evaluate(async () => {
-    await fetch("/api/preferences", {
+  await anonPage.waitForSelector("text=Bảng tổng hợp", WAIT);
+  assert.equal(
+    await anonPage.getByRole("button", { name: "Thanh toán" }).count(),
+    0,
+    "share page must not offer a payment QR",
+  );
+  await page.evaluate(async (id) => {
+    await fetch(`/api/games/${id}`, {
       method: "PATCH",
       credentials: "include",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        shareShowSummary: true,
-        shareShowMatrix: true,
-        shareShowPhotos: true,
-      }),
+      body: JSON.stringify({ shareShow: ["expenses", "matrix", "photos"] }),
     });
-  });
+  }, gameId);
   await anonPage.reload();
   await anonPage.waitForSelector("text=E2E Trip", WAIT);
-  await anonPage.waitForSelector("text=Binh → An", WAIT);
+  await anonPage.waitForSelector("text=Bảng tổng hợp", WAIT);
   await anonPage.click('button:has-text("Ảnh")');
   await anonPage.waitForSelector("text=Ảnh (2) >> visible=true", WAIT);
   await anonPage.click('button[aria-label="Hoa don san"] >> visible=true');
@@ -607,9 +609,9 @@ try {
     });
   await sharePhone.goto(`${BASE}/share/${detail.shareLink.token}`);
   await sharePhone
-    .getByRole("button", { name: "Chuyển khoản", exact: true })
+    .getByRole("heading", { name: "Bảng tổng hợp" })
     .waitFor({ state: "visible", ...WAIT });
-  assert.equal(await shareScrolls(), false, "share Tong ket cuon duoc");
+  assert.equal(await shareScrolls(), false, "share Tong hop cuon duoc");
   await sharePhone
     .getByRole("button", { name: "Bảng chia", exact: true })
     .click();
