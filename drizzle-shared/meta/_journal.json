@@ -64,6 +64,13 @@
       "when": 1795357652110,
       "tag": "0008_game_location_tags",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1795358813875,
+      "tag": "0009_contact_bank_accounts",
+      "breakpoints": true
     }
   ]
 }

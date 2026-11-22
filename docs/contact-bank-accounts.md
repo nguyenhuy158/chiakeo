@@ -10,4 +10,4 @@ Dữ liệu cũ có `bank_accounts = NULL` tiếp tục dùng ba trường đơn
 
 ## Phát hành
 
-Áp dụng `drizzle-shared/0004_overjoyed_white_queen.sql` trên Turso production trước khi deploy Worker mới: chỉ thêm cột nullable, không xóa hay đổi STK hiện có. Dùng quy trình `pnpm db:migrate:remote` với biến môi trường đã xác thực. Local D1 dùng `pnpm db:migrate:local`. Rollback code giữ nguyên cột và dữ liệu mới; không drop cột.
+Áp dụng `drizzle-shared/0009_contact_bank_accounts.sql` trên Turso production trước khi deploy Worker mới: chỉ thêm cột nullable, không xóa hay đổi STK hiện có. Dùng quy trình `pnpm db:migrate:remote` với biến môi trường đã xác thực. Local D1 dùng `pnpm db:migrate:local`. Rollback code giữ nguyên cột và dữ liệu mới; không drop cột.
