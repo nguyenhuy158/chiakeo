@@ -21,8 +21,11 @@ vi.mock("../adapters/react-query/queries", () => ({
     return { isPending: state.loading, isError: state.error, data: state.view };
   },
 }));
-vi.mock("../components/SettlementTableCard", () => ({
-  SettlementTableCard: () => "settlement table",
+vi.mock("../components/ShareSummaryImage", () => ({
+  ShareSummaryImage: () => "summary image",
+}));
+vi.mock("../components/SharePaymentPanel", () => ({
+  SharePaymentPanel: () => "payment panel",
 }));
 vi.mock("../components/CopyMenu", () => ({ CopyMenu: () => "copy menu" }));
 vi.mock("../components/SharePhotoGallery", () => ({
@@ -139,8 +142,8 @@ describe("SharePage", () => {
     expect(host.textContent).toContain("CK01");
     expect(host.textContent).toContain("Cầu tối");
     expect(host.textContent).toContain("Đã đóng");
-    expect(host.textContent).toContain("settlement table");
-    expect(host.textContent).not.toContain("payment panel");
+    expect(host.textContent).toContain("summary image");
+    expect(host.textContent).toContain("payment panel");
     expect(host.textContent).not.toContain("Tiền sân");
     act(() => tab("Chi tiêu").click());
     expect(host.textContent).toContain("Tiền sân");
@@ -162,20 +165,20 @@ describe("SharePage", () => {
     expect(host.textContent).not.toContain("Khoản đã ẩn");
   });
 
-  it("shows only the summary table when the owner turned every part off", () => {
+  it("shows only the summary image and the payment button when every part is off", () => {
     state.view = view({ shareShow: [] });
     render();
     expect(tab("Bảng chia")).toBeUndefined();
     expect(tab("Chi tiêu")).toBeUndefined();
     expect(tab("Ảnh")).toBeUndefined();
-    expect(host.textContent).toContain("settlement table");
+    expect(host.textContent).toContain("summary image");
     expect(host.textContent).not.toContain("Các khoản chi");
   });
 
   it("shows only the tabs the owner turned on", () => {
     state.view = view({ shareShow: ["photos"] });
     render();
-    expect(tab("Tổng hợp")).toBeDefined();
+    expect(tab("Tổng kết")).toBeDefined();
     expect(tab("Ảnh")).toBeDefined();
     expect(tab("Chi tiêu")).toBeUndefined();
     expect(tab("Bảng chia")).toBeUndefined();
@@ -188,7 +191,7 @@ describe("SharePage", () => {
     expect(host.textContent).toContain("photo gallery");
     state.view = view({ shareShow: [] });
     render();
-    expect(host.textContent).toContain("settlement table");
+    expect(host.textContent).toContain("summary image");
     expect(host.textContent).not.toContain("photo gallery");
   });
 
@@ -257,8 +260,8 @@ describe("SharePage", () => {
     await vi.waitFor(() =>
       expect(document.body.querySelectorAll("article")).toHaveLength(0),
     );
-    act(() => tab("Tổng hợp").click());
-    expect(host.textContent).toContain("settlement table");
+    act(() => tab("Tổng kết").click());
+    expect(host.textContent).toContain("summary image");
   });
 
   it("renders matrix with no participants, balances, or expenses", () => {
