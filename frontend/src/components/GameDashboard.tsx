@@ -18,6 +18,7 @@ import { copyText } from "../adapters/browser/clipboard";
 import { usePreferences } from "../adapters/react-query/queries";
 import { getQrProvider } from "../core/container";
 import { formatMoney } from "../core/domain/money";
+import { Checkbox } from "../ui/Checkbox";
 import { PagedList } from "../ui/PagedList";
 import { AdaptiveSheet } from "./AdaptiveSheet";
 
@@ -110,6 +111,8 @@ export type GameDashboardProps = {
   onSettlementHostChange?: (participantId: string) => void;
   /** Co mat thi moi dong chuyen khoan toi uu co nut ghi nhan da tra. */
   onSettle?: (settlement: SettlementRow) => void;
+  /** Co mat thi danh sach chuyen khoan gon cho tick nhieu dong va ghi nhan mot lan. */
+  onSettleMany?: (settlements: SettlementRow[]) => void | Promise<void>;
   onRemoveTransfer?: (expenseId: string) => void;
   settlePending?: boolean;
   shareUrl?: string;
@@ -519,10 +522,12 @@ function GameDashboardCompact({
   onSettlementModeChange,
   onSettlementHostChange,
   onSettle,
+  onSettleMany,
   onRemoveTransfer,
   settlePending = false,
   shareUrl,
 }: GameDashboardProps) {
+  const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
   const [view, setView] = useState<DashboardView>("balances");
   const [activeRow, setActiveRow] = useState<TransferRow | null>(null);
   const [rowOpen, setRowOpen] = useState(false);
@@ -592,6 +597,24 @@ function GameDashboardCompact({
       : transfers.length > 0
         ? "Mọi người đã cân bằng, không còn ai nợ ai."
         : "Thêm khoản chi để tính tiền.";
+
+  const selectedRows = transferRows.filter((row) => selectedKeys.has(row.key));
+  const allSelected =
+    transferRows.length > 0 && selectedRows.length === transferRows.length;
+
+  function toggleRow(key: string) {
+    setSelectedKeys((current) => {
+      const next = new Set(current);
+      if (!next.delete(key)) next.add(key);
+      return next;
+    });
+  }
+
+  function toggleAll() {
+    setSelectedKeys(
+      allSelected ? new Set() : new Set(transferRows.map((row) => row.key)),
+    );
+  }
 
   function openRow(row: TransferRow) {
     setActiveRow(row);
@@ -705,34 +728,77 @@ function GameDashboardCompact({
           />
         )}
         {view === "transfers" && (
-          <PagedList
-            items={transferRows}
-            getKey={(row) => row.key}
-            rowHeight={COMPACT_ROW_HEIGHT_PX}
-            empty={
-              <p className="py-6 text-center text-sm text-fg-muted">
-                {transferEmpty}
-              </p>
-            }
-            renderItem={(row) => (
-              <button
-                type="button"
-                onClick={() => openRow(row)}
-                aria-label={`Chi tiết ${row.fromName} trả ${row.toName}`}
-                className="flex h-full w-full items-center gap-2 rounded-md border border-border px-3 text-left transition active:bg-surface-muted"
-              >
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm font-semibold text-stone-950 dark:text-stone-50">
-                    {row.fromName} → {row.toName}
-                  </span>
-                  <span className="block text-sm font-bold text-violet-700 tabular dark:text-violet-400">
-                    {formatMoney(row.amount)}
-                  </span>
-                </span>
-                <ChevronRight size={16} className="shrink-0 text-fg-muted" />
-              </button>
+          <div className="flex h-full min-h-0 flex-col gap-2">
+            {onSettleMany && transferRows.length > 0 && (
+              <div className="flex shrink-0 items-center justify-between gap-2 rounded-md bg-surface-muted pl-3 pr-1">
+                <Checkbox
+                  label={`Chọn tất cả (${selectedRows.length}/${transferRows.length})`}
+                  checked={allSelected}
+                  indeterminate={selectedRows.length > 0 && !allSelected}
+                  onChange={toggleAll}
+                />
+                <button
+                  type="button"
+                  onClick={async () => {
+                    await onSettleMany(
+                      selectedRows.map((row) => row.settlement),
+                    );
+                    setSelectedKeys(new Set());
+                  }}
+                  disabled={settlePending || selectedRows.length === 0}
+                  className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-md border border-emerald-300 bg-emerald-50 px-2.5 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-100 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 dark:border-emerald-500/40 dark:bg-emerald-500/10 dark:text-emerald-300"
+                  title="Ghi nhận các khoản đã chọn đã được chuyển"
+                >
+                  <HandCoins size={14} />
+                  {`Đã trả (${selectedRows.length})`}
+                </button>
+              </div>
             )}
-          />
+            <div className="min-h-0 flex-1">
+              <PagedList
+                items={transferRows}
+                getKey={(row) => row.key}
+                rowHeight={COMPACT_ROW_HEIGHT_PX}
+                empty={
+                  <p className="py-6 text-center text-sm text-fg-muted">
+                    {transferEmpty}
+                  </p>
+                }
+                renderItem={(row) => (
+                  <div className="flex h-full items-center rounded-md border border-border">
+                    {onSettleMany && (
+                      <div className="ps-3">
+                        <Checkbox
+                          aria-label={`Chọn ${row.fromName} trả ${row.toName}`}
+                          checked={selectedKeys.has(row.key)}
+                          onChange={() => toggleRow(row.key)}
+                        />
+                      </div>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => openRow(row)}
+                      aria-label={`Chi tiết ${row.fromName} trả ${row.toName}`}
+                      className="flex h-full min-w-0 flex-1 items-center gap-2 rounded-md px-3 text-left transition active:bg-surface-muted"
+                    >
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-sm font-semibold text-stone-950 dark:text-stone-50">
+                          {row.fromName} → {row.toName}
+                        </span>
+                        <span className="block text-sm font-bold text-violet-700 tabular dark:text-violet-400">
+                          {formatMoney(row.amount)}
+                        </span>
+                      </span>
+                      <ChevronRight
+                        size={16}
+                        className="shrink-0 text-fg-muted"
+                      />
+                    </button>
+                  </div>
+                )}
+              />
+            </div>
+          </div>
         )}
         {view === "stats" && (
           <div className="h-full space-y-3 overflow-y-auto overscroll-contain">
