@@ -125,6 +125,7 @@ describe("AppLayout", () => {
     render();
     for (const [label, to] of [
       ["Kho cầu", "/shuttles"],
+      ["Cuộc chơi cha", "/bundles"],
       ["Thống kê vui", "/fun"],
       ["Cài đặt", "/settings"],
     ] as const) {

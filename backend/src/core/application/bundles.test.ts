@@ -123,6 +123,34 @@ describe("bundles", () => {
     expect(detail.people[0].debts.map((debt) => debt.gameId)).toEqual(["g2"]);
   });
 
+  it("xep nguoi no bang nhau theo ten", async () => {
+    const { repo, state } = setup();
+    for (const [gameId, hostId, anId] of [
+      ["g1", "h1", "a1"],
+      ["g2", "h2", "a2"],
+    ]) {
+      state.participants.push(participantRow(anId, "An", { gameId }));
+      state.expenses.push({
+        ...state.expenses[0],
+        id: `${gameId}_an`,
+        gameId,
+        payerParticipantId: hostId,
+        amount: 100_000,
+      });
+      state.splits.push({
+        expenseId: `${gameId}_an`,
+        participantId: anId,
+        amount: 100_000,
+        weight: null,
+      });
+    }
+    const bundle = await createBundle(repo, FAKE_OWNER, {
+      name: "Thang 8",
+      gameIds: ["g1", "g2"],
+    });
+    expect(bundle.people.map((person) => person.name)).toEqual(["An", "Nam"]);
+  });
+
   it("tu choi chon nguoi khong con no", async () => {
     const { repo } = setup();
     const bundle = await createBundle(repo, FAKE_OWNER, {

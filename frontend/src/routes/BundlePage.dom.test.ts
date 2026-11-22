@@ -3,23 +3,29 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ApiBundleDetail } from "../../../shared/api-types";
 
-const { state, settle, confirm } = vi.hoisted(() => ({
-  state: { data: undefined as ApiBundleDetail | undefined },
+const { state, settle, confirm, remove, navigate, error } = vi.hoisted(() => ({
+  state: {
+    data: undefined as ApiBundleDetail | undefined,
+    pending: false,
+  },
   settle: vi.fn(),
   confirm: vi.fn(),
+  remove: vi.fn(),
+  navigate: vi.fn(),
+  error: vi.fn(),
 }));
 
 vi.mock("../adapters/react-query/bundles-query", () => ({
   useBundle: () => ({
     data: state.data,
-    isPending: false,
+    isPending: state.pending,
     isError: state.data === undefined,
   }),
   useSettleBundle: () => ({ mutateAsync: settle, isPending: false }),
-  useDeleteBundle: () => ({ mutateAsync: vi.fn() }),
+  useDeleteBundle: () => ({ mutateAsync: remove }),
 }));
 vi.mock("../components/ConfirmDialog", () => ({ useConfirm: () => confirm }));
-vi.mock("sonner", () => ({ toast: { error: vi.fn(), success: vi.fn() } }));
+vi.mock("sonner", () => ({ toast: { error, success: vi.fn() } }));
 vi.mock("../ui/PagedList", async () => {
   const { createElement: element, Fragment } = await import("react");
   return {
@@ -27,18 +33,22 @@ vi.mock("../ui/PagedList", async () => {
       items,
       getKey,
       renderItem,
+      empty,
     }: {
       items: unknown[];
       getKey: (item: unknown) => string;
       renderItem: (item: unknown) => ReactNode;
+      empty: ReactNode;
     }) =>
-      element(
-        Fragment,
-        null,
-        items.map((item) =>
-          element("div", { key: getKey(item) }, renderItem(item)),
-        ),
-      ),
+      items.length === 0
+        ? empty
+        : element(
+            Fragment,
+            null,
+            items.map((item) =>
+              element("div", { key: getKey(item) }, renderItem(item)),
+            ),
+          ),
   };
 });
 vi.mock("@tanstack/react-router", async () => {
@@ -46,7 +56,7 @@ vi.mock("@tanstack/react-router", async () => {
   return {
     Link: ({ children }: { children: ReactNode }) =>
       element("a", null, children),
-    useNavigate: () => vi.fn(),
+    useNavigate: () => navigate,
     useParams: () => ({ bundleId: "bundle_1" }),
   };
 });
@@ -78,6 +88,10 @@ const BUNDLE: ApiBundleDetail = {
 beforeEach(() => {
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
   state.data = BUNDLE;
+  state.pending = false;
+  remove.mockReset().mockResolvedValue({ ok: true });
+  navigate.mockReset();
+  error.mockReset();
   settle.mockReset().mockResolvedValue(BUNDLE);
   confirm.mockReset().mockResolvedValue(true);
   host = document.createElement("div");
@@ -118,5 +132,66 @@ describe("BundlePage", () => {
       item.textContent?.startsWith("Chọn người"),
     ) as HTMLButtonElement;
     expect(submit.disabled).toBe(true);
+  });
+
+  it("shows loading and missing states", () => {
+    state.pending = true;
+    act(() => root.render(createElement(BundlePage)));
+    expect(host.textContent).not.toContain("Tháng 8");
+    state.pending = false;
+    state.data = undefined;
+    act(() => root.render(createElement(BundlePage)));
+    expect(host.textContent).toContain("Không tìm thấy cuộc chơi cha");
+  });
+
+  it("shows an empty state once nobody owes", () => {
+    state.data = { ...BUNDLE, people: [] };
+    act(() => root.render(createElement(BundlePage)));
+    expect(host.textContent).toContain("Không còn ai nợ");
+  });
+
+  it("unpicks a person and skips settling when the dialog is declined", async () => {
+    act(() => root.render(createElement(BundlePage)));
+    const box = host.querySelector(
+      '[aria-label="Chọn Nam"]',
+    ) as HTMLInputElement;
+    act(() => box.click());
+    act(() => box.click());
+    expect(host.textContent).toContain("Chọn người");
+    act(() => box.click());
+    confirm.mockResolvedValue(false);
+    const submit = [...host.querySelectorAll("button")].find((item) =>
+      item.textContent?.startsWith("Ghi nhận 1 người"),
+    ) as HTMLButtonElement;
+    await act(async () => submit.click());
+    expect(settle).not.toHaveBeenCalled();
+  });
+
+  it("reports a failed settle", async () => {
+    settle.mockRejectedValue(new Error("boom"));
+    act(() => root.render(createElement(BundlePage)));
+    act(() =>
+      (
+        host.querySelector('[aria-label="Chọn Nam"]') as HTMLInputElement
+      ).click(),
+    );
+    const submit = [...host.querySelectorAll("button")].find((item) =>
+      item.textContent?.startsWith("Ghi nhận 1 người"),
+    ) as HTMLButtonElement;
+    await act(async () => submit.click());
+    expect(error).toHaveBeenCalled();
+  });
+
+  it("deletes the bundle after confirming and goes back to the list", async () => {
+    act(() => root.render(createElement(BundlePage)));
+    const del = host.querySelector(
+      '[aria-label="Xóa cuộc chơi cha"]',
+    ) as HTMLButtonElement;
+    confirm.mockResolvedValueOnce(false);
+    await act(async () => del.click());
+    expect(remove).not.toHaveBeenCalled();
+    await act(async () => del.click());
+    expect(remove).toHaveBeenCalledWith("bundle_1");
+    expect(navigate).toHaveBeenCalledWith({ to: "/bundles" });
   });
 });
