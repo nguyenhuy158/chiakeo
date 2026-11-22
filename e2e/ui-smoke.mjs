@@ -919,6 +919,120 @@ try {
   assert.match(await cliRun("game", "CLI Trip"), /Binh sends 45\.000 ₫ to An/);
   await cliRun("pay", "CLI Trip", "Binh", "An", "45k");
   assert.doesNotMatch(await cliRun("game", "CLI Trip"), /sends/);
+
+  assert.match(
+    await cliRun("prefs", "hideSettledGames=true"),
+    /hideSettledGames=true/,
+  );
+  assert.match(
+    await cliRun("prefs", "hideSettledGames=false"),
+    /hideSettledGames=false/,
+  );
+  assert.match(await cliRun("profile"), /\S/);
+
+  await cliRun("new", "CLI Extra", "--mode", "p2p");
+  await cliRun(
+    "add-person",
+    "CLI Extra",
+    "Chi",
+    "Dung",
+    "--bank",
+    "VCB",
+    "--account",
+    "123",
+  );
+  await cliRun("edit-person", "CLI Extra", "Chi", "--name", "Chau");
+  await cliRun(
+    "add-expense",
+    "CLI Extra",
+    "Com",
+    "60k",
+    "--payer",
+    "Chau",
+    "--shares",
+    "Chau=1,Dung=2",
+  );
+  assert.match(await cliRun("expenses", "CLI Extra"), /#1\s+Com\s+60\.000 ₫/);
+  await cliRun(
+    "edit-expense",
+    "CLI Extra",
+    "#1",
+    "--amount",
+    "90k",
+    "--note",
+    "edited",
+  );
+  assert.match(await cliRun("game", "CLI Extra"), /Total spent: 90\.000 ₫/);
+  await cliRun("exclude", "CLI Extra", "Com");
+  assert.match(await cliRun("expenses", "CLI Extra"), /\[excluded\]/);
+  await cliRun("include", "CLI Extra", "Com");
+  await cliRun("settle", "CLI Extra", "host", "--host", "Chau");
+  await cliRun(
+    "add-expense",
+    "CLI Extra",
+    "Salary",
+    "10k",
+    "--payer",
+    "Dung",
+    "--income",
+  );
+  await cliRun("rm-expense", "CLI Extra", "Salary");
+  const historyOutput = await cliRun("history", "CLI Extra");
+  assert.match(historyOutput, /expense_removed/);
+  await cliRun("undo", /^(\S+)\s.*expense_removed/m.exec(historyOutput)[1]);
+  assert.match(await cliRun("expenses", "CLI Extra"), /Salary/);
+  await cliRun("add-person", "CLI Extra", "Em");
+  await cliRun("rm-person", "CLI Extra", "Em");
+  assert.doesNotMatch(await cliRun("game", "CLI Extra"), /Em:/);
+
+  assert.match(
+    await cliRun("share", "CLI Extra", "--new"),
+    /\/share\/\S+\s+\(on\)/,
+  );
+  assert.match(await cliRun("share", "CLI Extra", "--off"), /\(off\)/);
+  await cliRun("invite", "CLI Extra", "friend@example.com");
+  assert.match(
+    await cliRun("collaborators", "CLI Extra"),
+    /friend@example\.com/,
+  );
+  await cliRun("uninvite", "CLI Extra", "friend@example.com");
+  assert.doesNotMatch(await cliRun("collaborators", "CLI Extra"), /friend@/);
+
+  await cliRun("contact-add", "Eva", "--bank", "MB", "--account", "999");
+  assert.match(await cliRun("contacts"), /Eva/);
+  await cliRun("contact-edit", "Eva", "--name", "Eve");
+  assert.match(await cliRun("contacts"), /Eve/);
+  await cliRun("contact-rm", "Eve");
+  assert.doesNotMatch(await cliRun("contacts"), /Eve/);
+
+  await cliRun("shuttle", "set", "10", "--note", "e2e");
+  await cliRun("shuttle", "use", "2");
+  const shuttleOutput = await cliRun("shuttles");
+  assert.match(shuttleOutput, /Stock: 8/);
+  await cliRun("shuttle-rm", /^(\S+)\s+-2\s/m.exec(shuttleOutput)[1]);
+  assert.match(await cliRun("shuttles"), /Stock: 10/);
+
+  assert.match(await cliRun("photos", "CLI Extra"), /No photos/);
+  assert.match(await cliRun("stats"), /Games: \d+/);
+  assert.match(await cliRun("balances"), /games, total spent/);
+  await cliRun("report", "--month", new Date().toISOString().slice(0, 7));
+
+  await cliRun("close", "CLI Extra");
+  assert.match(await cliRun("games", "--closed"), /CLI Extra/);
+  await cliRun("reopen", "CLI Extra");
+  await cliRun("archive", "CLI Extra");
+  assert.match(await cliRun("games", "--archived"), /CLI Extra/);
+  await cliRun("reopen", "CLI Extra");
+  await cliRun("duplicate", "CLI Extra");
+  await cliRun("rename", "CLI Extra", "CLI Extra 2");
+  await cliRun("delete", "CLI Extra 2");
+  assert.match(await cliRun("games", "--trash"), /CLI Extra 2/);
+  await cliRun("restore", "CLI Extra 2");
+  await cliRun("delete", "CLI Extra 2");
+  await assert.rejects(cliRun("purge", "CLI Extra 2"));
+  await cliRun("purge", "CLI Extra 2", "--yes");
+  assert.doesNotMatch(await cliRun("games", "--trash"), /CLI Extra 2/);
+
   await cliRun("down");
   await assert.rejects(cliRun("whoami"));
   await assert.rejects(cliRun("no-such-command"));

@@ -90,7 +90,7 @@ e2e/                           # E2E (Playwright + wrangler dev), plumbing from 
   ui-smoke.mjs                 #   Smoke suite qua UI that, ghi D1 local (`pnpm e2e:smoke`)
 
 cli/                           # CLI `chiakeo` (npm: chiakeo), Node 22, khong dependency
-  chiakeo.mjs                  #   up/down/whoami/games/game/new/add-person/add-expense/pay/api
+  chiakeo.mjs                  #   Every web feature as a command (games, people, expenses, share, photos, shuttles, stats); `chiakeo` prints the list
   package.json  README.md      #   Goi npm; chu trong CLI la tieng Anh A2 (kit CLI rule)
 ```
 
