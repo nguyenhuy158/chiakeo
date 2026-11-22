@@ -123,17 +123,9 @@ describe("SharePaymentPanel", () => {
     expect(host.textContent).toContain("Chuyển khoản cho Huy");
     click("Thanh toán");
     expect(document.body.textContent).toContain("Không rõ");
-    expect(document.body.textContent).toContain("Chọn ít nhất một người");
+    expect(document.querySelector('input[type="checkbox"]')).toBeNull();
 
-    const checkbox = document.querySelector<HTMLInputElement>(
-      'input[type="checkbox"]',
-    );
-    act(() => checkbox?.click());
-    act(() => checkbox?.click());
-    act(() => checkbox?.click());
-    expect(document.body.textContent).toContain("Tạo QR");
-
-    await act(async () => click("Tạo QR"));
+    await act(async () => click("An"));
     expect(mutateAsync).toHaveBeenCalledWith(["an"]);
     expect(document.body.textContent).toContain("Đang tải");
 
