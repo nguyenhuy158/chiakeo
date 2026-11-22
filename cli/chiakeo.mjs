@@ -18,6 +18,18 @@ const AMOUNT_PATTERN = /^(\d+(?:[.,]\d+)?)([km])?$/i;
 const MONTH_PATTERN = /^\d{4}-(0[1-9]|1[0-2])$/;
 const SETTLEMENT_MODES = ["p2p", "host", "pick", "off"];
 const SHUTTLE_KINDS = ["add", "use", "set"];
+const PHOTO_DATA_MAX_LENGTH = 1_400_000;
+const PHOTO_THUMB_DATA_MAX_LENGTH = 250_000;
+const RECEIPT_DATA_MAX_LENGTH = 8_000_000;
+const PHOTO_MAX_SIDE = 20_000;
+const BASE64_BYTES_PER_GROUP = 3;
+const BASE64_CHARS_PER_GROUP = 4;
+const base64Length = (bytes) =>
+  Math.ceil(bytes / BASE64_BYTES_PER_GROUP) * BASE64_CHARS_PER_GROUP;
+const JPEG_NO_SIZE_MARKERS = new Set([0xc4, 0xc8, 0xcc]);
+const PNG_SIGNATURE = Buffer.from([
+  0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
+]);
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const BOOLEAN_FLAGS = new Set([
   "closed",
@@ -80,6 +92,7 @@ Expenses
   exclude <game> <expense> | include <game> <expense>
   pay <game> <from> <to> <amount> [--note NOTE]
   ai <game> <text...>            ask the AI to read an expense from text
+  receipt <game> <file>          ask the AI to read an expense from a receipt photo
 
 Sharing
   share <game> [--on|--off|--new]   show or change the public link
@@ -89,6 +102,8 @@ Sharing
 
 Photos and QR
   photos <game>                  list photos
+  photo-add <game> <file> [--caption TEXT] [--expense EXPENSE]
+      JPEG, PNG or WebP up to about 1 MB (resize big photos first)
   photo-save <photo-id> --out FILE
   photo-edit <photo-id> --caption TEXT
   photo-rm <photo-id>
@@ -788,6 +803,118 @@ async function photos({ positional }) {
   if (items.length === 0) console.log("No photos.");
 }
 
+function readImageInfo(bytes) {
+  if (bytes.subarray(0, PNG_SIGNATURE.length).equals(PNG_SIGNATURE)) {
+    return {
+      mimeType: "image/png",
+      width: bytes.readUInt32BE(16),
+      height: bytes.readUInt32BE(20),
+    };
+  }
+  if (bytes[0] === 0xff && bytes[1] === 0xd8) {
+    let offset = 2;
+    while (offset + 9 < bytes.length && bytes[offset] === 0xff) {
+      const marker = bytes[offset + 1];
+      if (
+        marker >= 0xc0 &&
+        marker <= 0xcf &&
+        !JPEG_NO_SIZE_MARKERS.has(marker)
+      ) {
+        return {
+          mimeType: "image/jpeg",
+          width: bytes.readUInt16BE(offset + 7),
+          height: bytes.readUInt16BE(offset + 5),
+        };
+      }
+      offset += 2 + bytes.readUInt16BE(offset + 2);
+    }
+    return { mimeType: "image/jpeg", width: 0, height: 0 };
+  }
+  if (
+    bytes.toString("latin1", 0, 4) === "RIFF" &&
+    bytes.toString("latin1", 8, 12) === "WEBP"
+  ) {
+    const chunk = bytes.toString("latin1", 12, 16);
+    if (chunk === "VP8 ") {
+      return {
+        mimeType: "image/webp",
+        width: bytes.readUInt16LE(26) & 0x3fff,
+        height: bytes.readUInt16LE(28) & 0x3fff,
+      };
+    }
+    if (chunk === "VP8L") {
+      const bits = bytes.readUInt32LE(21);
+      return {
+        mimeType: "image/webp",
+        width: (bits & 0x3fff) + 1,
+        height: ((bits >>> 14) & 0x3fff) + 1,
+      };
+    }
+    if (chunk === "VP8X") {
+      return {
+        mimeType: "image/webp",
+        width: bytes.readUIntLE(24, 3) + 1,
+        height: bytes.readUIntLE(27, 3) + 1,
+      };
+    }
+    return { mimeType: "image/webp", width: 0, height: 0 };
+  }
+  return null;
+}
+
+async function readImageFile(path, maxLength) {
+  const bytes = await readFile(requireArg(path, "<file>")).catch(() => {
+    throw new CliError(`Cannot read file: ${path}`);
+  });
+  let info;
+  try {
+    info = readImageInfo(bytes);
+  } catch {
+    info = null;
+  }
+  if (!info) throw new CliError("The file must be a JPEG, PNG or WebP image.");
+  if (base64Length(bytes.length) > maxLength) {
+    throw new CliError("The image is too big. Resize it and try again.");
+  }
+  return { ...info, data: bytes.toString("base64") };
+}
+
+async function photoAdd({ positional, flags }) {
+  const detail = await loadGame(positional[1]);
+  const image = await readImageFile(positional[2], PHOTO_DATA_MAX_LENGTH);
+  const validSize = (side) => side > 0 && side <= PHOTO_MAX_SIDE;
+  if (!validSize(image.width) || !validSize(image.height)) {
+    throw new CliError("Cannot read the image size from this file.");
+  }
+  if (image.data.length > PHOTO_THUMB_DATA_MAX_LENGTH) {
+    throw new CliError(
+      "The image is too big for the thumbnail (about 180 KB). Resize it and try again.",
+    );
+  }
+  const expenseId =
+    flags.expense === undefined ? null : findExpense(detail, flags.expense).id;
+  await authed("POST", `/api/games/${detail.id}/photos`, {
+    ...image,
+    thumbData: image.data,
+    caption: flags.caption ?? "",
+    expenseId,
+  });
+  console.log(`Photo added to ${detail.name}`);
+}
+
+async function receipt({ positional }) {
+  const target = await findGame(requireArg(positional[1], "<game>"));
+  const { mimeType, data } = await readImageFile(
+    positional[2],
+    RECEIPT_DATA_MAX_LENGTH,
+  );
+  const { suggestion } = await authed("POST", "/api/ai/receipt", {
+    gameId: target.id,
+    image: { mimeType, data },
+  });
+  console.log(JSON.stringify(suggestion, null, 2));
+}
+
 async function photoSave({ positional, flags }) {
   const out = requireArg(flags.out, "--out");
   const photo = await authed(
@@ -954,11 +1081,13 @@ const COMMANDS = {
   include: setExcluded(false),
   pay,
   ai,
+  receipt,
   share,
   collaborators,
   invite,
   uninvite,
   photos,
+  "photo-add": photoAdd,
   "photo-save": photoSave,
   "photo-edit": photoEdit,
   "photo-rm": photoRm,
