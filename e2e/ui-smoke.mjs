@@ -10,9 +10,11 @@
 import assert from "node:assert/strict";
 import { execFile, spawn } from "node:child_process";
 import { randomBytes } from "node:crypto";
+import { writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
+import { deflateSync } from "node:zlib";
 import { findChromium } from "@huyab/e2e";
 import { chromium } from "playwright-core";
 
@@ -1014,6 +1016,70 @@ try {
   assert.match(await cliRun("shuttles"), /Stock: 10/);
 
   assert.match(await cliRun("photos", "CLI Extra"), /No photos/);
+  const pngCrc = (buffer) => {
+    let crc = 0xffffffff;
+    for (const byte of buffer) {
+      crc ^= byte;
+      for (let bit = 0; bit < 8; bit += 1)
+        crc = crc & 1 ? (crc >>> 1) ^ 0xedb88320 : crc >>> 1;
+    }
+    return (crc ^ 0xffffffff) >>> 0;
+  };
+  const pngChunk = (type, body) => {
+    const head = Buffer.alloc(4);
+    head.writeUInt32BE(body.length);
+    const typed = Buffer.concat([Buffer.from(type, "latin1"), body]);
+    const tail = Buffer.alloc(4);
+    tail.writeUInt32BE(pngCrc(typed));
+    return Buffer.concat([head, typed, tail]);
+  };
+  const makePng = (width, height) => {
+    const header = Buffer.alloc(13);
+    header.writeUInt32BE(width, 0);
+    header.writeUInt32BE(height, 4);
+    header[8] = 8;
+    header[9] = 2;
+    const row = Buffer.concat([Buffer.alloc(1), Buffer.alloc(width * 3, 0x7c)]);
+    return Buffer.concat([
+      Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+      pngChunk("IHDR", header),
+      pngChunk("IDAT", deflateSync(Buffer.concat(Array(height).fill(row)))),
+      pngChunk("IEND", Buffer.alloc(0)),
+    ]);
+  };
+  const cliPhoto = join(
+    tmpdir(),
+    `chiakeo-e2e-${randomBytes(4).toString("hex")}.png`,
+  );
+  await writeFile(cliPhoto, makePng(40, 30));
+  await cliRun("add-expense", "CLI Extra", "Cau", "50k", "--payer", "Chau");
+  await cliRun(
+    "photo-add",
+    "CLI Extra",
+    cliPhoto,
+    "--caption",
+    "CLI photo",
+    "--expense",
+    "Cau",
+  );
+  assert.match(await cliRun("photos", "CLI Extra"), /\s40x30\s+CLI photo/);
+  const cliBigPhoto = join(
+    tmpdir(),
+    `chiakeo-e2e-${randomBytes(4).toString("hex")}.png`,
+  );
+  await writeFile(
+    cliBigPhoto,
+    Buffer.concat([makePng(1, 1), Buffer.alloc(200_000)]),
+  );
+  await assert.rejects(
+    cliRun("photo-add", "CLI Extra", cliBigPhoto),
+    /too big/,
+  );
+  await writeFile(cliBigPhoto, "not an image");
+  await assert.rejects(
+    cliRun("photo-add", "CLI Extra", cliBigPhoto),
+    /JPEG, PNG or WebP/,
+  );
   assert.match(await cliRun("stats"), /Games: \d+/);
   assert.match(await cliRun("balances"), /games, total spent/);
   await cliRun("report", "--month", new Date().toISOString().slice(0, 7));
