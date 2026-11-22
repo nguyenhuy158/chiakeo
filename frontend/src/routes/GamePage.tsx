@@ -355,6 +355,24 @@ export function GamePage() {
         });
         toast.success("Đã ghi nhận trả nợ");
       }}
+      onSettleMany={async (settlements) => {
+        const total = settlements.reduce((sum, item) => sum + item.amount, 0);
+        const ok = await confirm({
+          title: `Ghi nhận ${settlements.length} khoản đã trả?`,
+          description: `Tổng ${formatMoney(total)}.`,
+          confirmLabel: "Ghi nhận",
+        });
+        if (!ok) return;
+        for (const settlement of settlements) {
+          await addTransfer.mutateAsync({
+            fromParticipantId: settlement.fromParticipantId,
+            toParticipantId: settlement.toParticipantId,
+            amount: settlement.amount,
+            note: "",
+          });
+        }
+        toast.success(`Đã ghi nhận ${settlements.length} khoản trả nợ`);
+      }}
       onRemoveTransfer={handleRemoveExpense}
       settlePending={addTransfer.isPending}
     />

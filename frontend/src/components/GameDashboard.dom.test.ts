@@ -434,6 +434,34 @@ describe("GameDashboard compact", () => {
     expect(onSettle).toHaveBeenCalledWith(summary.settlements[0]);
   });
 
+  it("tick nhiều dòng chuyển khoản rồi ghi nhận đã trả một lần", async () => {
+    const onSettleMany = vi.fn().mockResolvedValue(undefined);
+    const two: ApiSummary = {
+      ...summary,
+      settlements: [
+        ...summary.settlements,
+        { fromParticipantId: "chau", toParticipantId: "an", amount: 20000 },
+      ],
+    };
+    render({ compact: true, summary: two, onSettleMany });
+    show("Chuyển khoản");
+    expect(button("Đã trả (0)")?.disabled).toBe(true);
+    const boxes = [
+      ...host.querySelectorAll<HTMLInputElement>("input[type=checkbox]"),
+    ];
+    act(() =>
+      host
+        .querySelector<HTMLInputElement>("input[aria-label='Chọn Châu trả An']")
+        ?.click(),
+    );
+    expect(button("Đã trả (1)")?.disabled).toBe(false);
+    act(() => boxes[0]?.click());
+    expect(button("Đã trả (2)")).toBeDefined();
+    await act(async () => button("Đã trả (2)")?.click());
+    expect(onSettleMany).toHaveBeenCalledWith(two.settlements);
+    expect(button("Đã trả (0)")).toBeDefined();
+  });
+
   it("đóng Sheet bằng Escape và ẩn QR khi không dựng được", async () => {
     canBuild.mockReturnValue(false);
     render({ compact: true });
