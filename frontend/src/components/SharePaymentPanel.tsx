@@ -87,7 +87,6 @@ export function SharePaymentPanel({
   const optionsQuery = usePaymentOptions(token);
   const createPayment = useCreatePayment(token);
   const [open, setOpen] = useState(false);
-  const [selected, setSelected] = useState<string[]>([]);
   const [code, setCode] = useState("");
 
   const receiver = optionsQuery.data?.receiver;
@@ -105,39 +104,21 @@ export function SharePaymentPanel({
   const nameById = new Map(
     participants.map((person) => [person.id, person.name]),
   );
-  const total = options
-    .filter((option) => selected.includes(option.participantId))
-    .reduce((sum, option) => sum + option.amount, 0);
-
-  function toggle(participantId: string) {
-    setSelected((current) =>
-      current.includes(participantId)
-        ? current.filter((id) => id !== participantId)
-        : [...current, participantId],
-    );
-  }
-
   function close() {
     setOpen(false);
-    setSelected([]);
     setCode("");
   }
 
-  async function submit() {
-    const payment = await createPayment.mutateAsync(selected);
+  async function pay(participantId: string) {
+    const payment = await createPayment.mutateAsync([participantId]);
     setCode(payment.code);
   }
 
   return (
     <section className="flex items-center justify-between gap-3 rounded-lg border border-border bg-surface p-4 shadow-sm">
-      <div className="min-w-0">
-        <h3 className="text-base font-semibold">
-          Chuyển khoản cho {receiver.name}
-        </h3>
-        <p className="text-sm text-fg-muted">
-          Quét QR, app tự ghi nhận khi tiền về.
-        </p>
-      </div>
+      <h3 className="min-w-0 truncate text-base font-semibold">
+        Chuyển khoản cho {receiver.name}
+      </h3>
       <button
         type="button"
         onClick={() => setOpen(true)}
@@ -153,43 +134,29 @@ export function SharePaymentPanel({
             <PaymentTracker token={token} code={code} />
           </div>
         ) : (
-          <div className="space-y-3 pb-4">
-            <p className="text-sm text-fg-muted">Bạn trả cho những ai?</p>
-            <div className="space-y-2">
-              {options.map((option) => (
-                <label
-                  key={option.participantId}
-                  className="flex items-center justify-between gap-3 rounded-md border border-border p-3"
-                >
-                  <span className="flex items-center gap-2 text-sm font-medium">
-                    <input
-                      type="checkbox"
-                      checked={selected.includes(option.participantId)}
-                      onChange={() => toggle(option.participantId)}
-                    />
-                    {nameById.get(option.participantId) || "Không rõ"}
-                  </span>
-                  <span className="text-sm font-semibold tabular">
-                    {formatMoney(option.amount)}
-                  </span>
-                </label>
-              ))}
-            </div>
+          <div className="space-y-2 pb-4">
+            <p className="text-sm text-fg-muted">Ai đang trả tiền?</p>
+            {options.map((option) => (
+              <button
+                key={option.participantId}
+                type="button"
+                disabled={createPayment.isPending}
+                onClick={() => pay(option.participantId)}
+                className="flex min-h-11 w-full items-center justify-between gap-3 rounded-md border border-border p-3 text-start disabled:opacity-50"
+              >
+                <span className="text-sm font-medium">
+                  {nameById.get(option.participantId) || "Không rõ"}
+                </span>
+                <span className="text-sm font-semibold tabular">
+                  {formatMoney(option.amount)}
+                </span>
+              </button>
+            ))}
             {createPayment.isError && (
               <p role="alert" className="text-sm text-danger">
                 Không tạo được mã thanh toán, thử lại nhé.
               </p>
             )}
-            <button
-              type="button"
-              disabled={selected.length === 0 || createPayment.isPending}
-              onClick={submit}
-              className="h-11 w-full rounded-md bg-primary text-sm font-semibold text-white disabled:opacity-50"
-            >
-              {selected.length === 0
-                ? "Chọn ít nhất một người"
-                : `Tạo QR ${formatMoney(total)}`}
-            </button>
           </div>
         )}
       </AdaptiveSheet>
