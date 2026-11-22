@@ -233,9 +233,7 @@ curl https://chiakeo.huyab.cfd/api/health    # ok:false + hint = migration not a
 
 A mismatched commit means the build has not finished yet; wait and re-check.
 
-CLI release: bump `version` in `cli/package.json` (PR to `main`), then push the tag
-`cli-v<version>`. `.github/workflows/publish-cli.yml` checks that the tag matches the
-version and runs `npm publish` with the repo secret `NPM_TOKEN`. Never publish by hand.
+CLI release: bump `version` in `cli/package.json` and merge the PR to `main`. `.github/workflows/publish-cli.yml` then publishes it to npm with the repo secret `NPM_TOKEN`, and skips it when that version is already on npm. Never publish by hand.
 
 ## Architecture Decisions & Pitfalls
 
