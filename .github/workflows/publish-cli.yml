@@ -2,7 +2,15 @@ name: Publish CLI
 
 on:
   push:
-    tags: ["cli-v*"]
+    branches: [main]
+    paths:
+      - cli/package.json
+      - .github/workflows/publish-cli.yml
+  workflow_dispatch:
+
+concurrency:
+  group: publish-cli
+  cancel-in-progress: false
 
 permissions:
   contents: read
@@ -16,13 +24,22 @@ jobs:
         with:
           node-version: 22
           registry-url: https://registry.npmjs.org
-      - name: Tag must match the CLI version
+      - name: Is this version already on npm?
+        id: check
         run: |
+          name="$(node -p "require('./cli/package.json').name")"
           version="$(node -p "require('./cli/package.json').version")"
-          test "${GITHUB_REF_NAME}" = "cli-v${version}" || { echo "Tag ${GITHUB_REF_NAME} does not match cli/package.json version ${version}"; exit 1; }
+          if npm view "${name}@${version}" version >/dev/null 2>&1; then
+            echo "${name}@${version} is already on npm. Nothing to publish."
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "publish=true" >> "$GITHUB_OUTPUT"
+          fi
       - name: Smoke test
+        if: steps.check.outputs.publish == 'true'
         run: node cli/chiakeo.mjs | head -1
       - name: Publish
+        if: steps.check.outputs.publish == 'true'
         working-directory: cli
         run: npm publish --access public
         env:
