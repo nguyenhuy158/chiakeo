@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "8697006e-2855-4754-866c-e11b2edb1088",
+  "id": "945a775b-ad39-4ad5-9b9a-f97df8bd290e",
   "prevId": "3a1a9e86-f5eb-440b-83d5-ba1bf31ced34",
   "tables": {
     "chiakeo_account": {
@@ -115,6 +115,126 @@
           "tableTo": "chiakeo_user",
           "columnsFrom": [
             "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "chiakeo_bundle_games": {
+      "name": "chiakeo_bundle_games",
+      "columns": {
+        "bundle_id": {
+          "name": "bundle_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "game_id": {
+          "name": "game_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "chiakeo_bundle_games_bundle_game_idx": {
+          "name": "chiakeo_bundle_games_bundle_game_idx",
+          "columns": [
+            "bundle_id",
+            "game_id"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "chiakeo_bundle_games_bundle_id_chiakeo_bundles_id_fk": {
+          "name": "chiakeo_bundle_games_bundle_id_chiakeo_bundles_id_fk",
+          "tableFrom": "chiakeo_bundle_games",
+          "tableTo": "chiakeo_bundles",
+          "columnsFrom": [
+            "bundle_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "chiakeo_bundle_games_game_id_chiakeo_games_id_fk": {
+          "name": "chiakeo_bundle_games_game_id_chiakeo_games_id_fk",
+          "tableFrom": "chiakeo_bundle_games",
+          "tableTo": "chiakeo_games",
+          "columnsFrom": [
+            "game_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "chiakeo_bundles": {
+      "name": "chiakeo_bundles",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "owner_user_id": {
+          "name": "owner_user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "chiakeo_bundles_owner_user_id_idx": {
+          "name": "chiakeo_bundles_owner_user_id_idx",
+          "columns": [
+            "owner_user_id"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "chiakeo_bundles_owner_user_id_chiakeo_user_id_fk": {
+          "name": "chiakeo_bundles_owner_user_id_chiakeo_user_id_fk",
+          "tableFrom": "chiakeo_bundles",
+          "tableTo": "chiakeo_user",
+          "columnsFrom": [
+            "owner_user_id"
           ],
           "columnsTo": [
             "id"
@@ -930,14 +1050,6 @@
         },
         "tags": {
           "name": "tags",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "'[]'"
-        },
-        "share_show": {
-          "name": "share_show",
           "type": "text",
           "primaryKey": false,
           "notNull": true,

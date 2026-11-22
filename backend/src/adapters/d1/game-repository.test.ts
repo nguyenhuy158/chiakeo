@@ -184,6 +184,43 @@ describe("D1 game repository", () => {
     expect(await repo.shuttleEntries.getOwned(entry.id, "owner")).toBeNull();
   });
 
+  it("luu cuoc cha cung cac cuoc con va cach ly theo chu so huu", async () => {
+    const repo = createGameRepository(createDb({ DB: database }));
+    const now = "2026-07-01T00:00:00.000Z";
+    for (const id of ["bundle-g1", "bundle-g2"]) {
+      await repo.games.insert({
+        id,
+        ownerUserId: "owner",
+        code: id.toUpperCase(),
+        name: id,
+        settlementMode: "p2p",
+        settlementHostId: "",
+        location: "",
+        tags: [],
+        shareShow: [],
+        createdAt: now,
+        updatedAt: now,
+        deletedAt: null,
+        closedAt: null,
+        closeMode: "",
+      });
+    }
+    const row = {
+      id: "bundle-d1",
+      ownerUserId: "owner",
+      name: "Thang 7",
+      createdAt: now,
+      gameIds: ["bundle-g1", "bundle-g2"],
+    };
+    await repo.bundles.insert(row);
+    expect(await repo.bundles.getById(row.id)).toEqual(row);
+    expect(await repo.bundles.getById("missing")).toBeNull();
+    expect(await repo.bundles.listByOwner("owner")).toEqual([row]);
+    expect(await repo.bundles.listByOwner("friend")).toEqual([]);
+    await repo.bundles.delete(row.id);
+    expect(await repo.bundles.getById(row.id)).toBeNull();
+  });
+
   it("upsert danh bạ theo tên chuẩn hóa và cách ly theo chủ sở hữu", async () => {
     const repo = createGameRepository(createDb({ DB: database }));
     const now = "2026-07-01T00:00:00.000Z";

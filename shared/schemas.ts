@@ -449,3 +449,22 @@ export const deviceTokenInputSchema = z.object({
 export const deviceUserCodeInputSchema = z.object({
   user_code: z.string().trim().min(1).max(32),
 });
+
+export const MIN_BUNDLE_GAMES = 2;
+export const MAX_BUNDLE_GAMES = 8;
+export const MAX_BUNDLE_PEOPLE = 50;
+
+export const bundleInputSchema = z.object({
+  name: gameNameSchema,
+  gameIds: z
+    .array(z.string().min(1))
+    .min(MIN_BUNDLE_GAMES)
+    .max(MAX_BUNDLE_GAMES),
+});
+
+export const bundleSettleInputSchema = z.object({
+  names: z.array(z.string().trim().min(1)).min(1).max(MAX_BUNDLE_PEOPLE),
+});
+
+export type BundleInput = z.input<typeof bundleInputSchema>;
+export type BundleSettleInput = z.infer<typeof bundleSettleInputSchema>;

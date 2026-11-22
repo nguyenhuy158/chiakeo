@@ -4,6 +4,14 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { provideGameApi } from "../../core/container";
 import type { GameApiPort } from "../../core/ports/game-api";
+import {
+  bundleKeys,
+  useBundle,
+  useBundles,
+  useCreateBundle,
+  useDeleteBundle,
+  useSettleBundle,
+} from "./bundles-query";
 import { crossBalancesKeys, useCrossBalances } from "./cross-balances-query";
 import { funStatsKeys, useFunStats } from "./fun-stats-query";
 import {
@@ -81,6 +89,37 @@ describe("standalone React Query hooks", () => {
         }),
       );
     });
+  });
+
+  it("loads bundles and refreshes caches after bundle writes", async () => {
+    const detail = { id: "b", people: [] };
+    const list = vi.fn().mockResolvedValue([{ id: "b" }]);
+    const get = vi.fn().mockResolvedValue(detail);
+    const create = vi.fn().mockResolvedValue(detail);
+    const settle = vi.fn().mockResolvedValue(detail);
+    const remove = vi.fn().mockResolvedValue({ ok: true });
+    provideGameApi({
+      bundles: { list, detail: get, create, settle, remove },
+    } as unknown as GameApiPort);
+    const current = mount(() => ({
+      list: useBundles(),
+      one: useBundle("b"),
+      create: useCreateBundle(),
+      settle: useSettleBundle("b"),
+      remove: useDeleteBundle(),
+    }));
+    await vi.waitFor(() => expect(current().one.data).toEqual(detail));
+    expect(current().list.data).toEqual([{ id: "b" }]);
+
+    await act(async () => {
+      await current().create.mutateAsync({ name: "n", gameIds: ["a", "b"] });
+      await current().settle.mutateAsync({ names: ["Nam"] });
+      await current().remove.mutateAsync("b");
+    });
+    expect(create).toHaveBeenCalledOnce();
+    expect(settle).toHaveBeenCalledWith("b", { names: ["Nam"] });
+    expect(remove).toHaveBeenCalledWith("b");
+    expect(client.getQueryData(bundleKeys.detail("b"))).toEqual(detail);
   });
 
   it("writes shuttle creation and deletion results straight into cache", async () => {

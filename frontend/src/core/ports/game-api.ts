@@ -3,14 +3,16 @@
 
 import type {
   ApiAiSuggestionResponse,
+  ApiBundleDetail,
+  ApiBundleSummary,
   ApiCreatedMcpToken,
   ApiCrossGameBalances,
-  ApiFunStats,
-  ApiGame,
-  ApiGameDetail,
   ApiDeviceApproved,
   ApiDeviceDenied,
   ApiDeviceLookup,
+  ApiFunStats,
+  ApiGame,
+  ApiGameDetail,
   ApiMcpToken,
   ApiPaymentOptions,
   ApiPaymentRequest,
@@ -24,6 +26,8 @@ import type {
 import type { Contact } from "../../../../shared/contacts";
 import type { ApiGameEvent } from "../../../../shared/game-events";
 import type {
+  BundleInput,
+  BundleSettleInput,
   ContactInput,
   ContactUpdateInput,
   ExpenseInput,
@@ -71,6 +75,18 @@ export type GameApiPort = {
   /** So du gop tat ca cuoc chia, dung cho phan "ai con no ai" o trang chu. */
   crossBalances: {
     get(): Promise<ApiCrossGameBalances>;
+  };
+  /** Cuoc cha gom nhieu cuoc con de thu tien mot lan cho nguoi no nhieu cuoc. */
+  bundles: {
+    list(): Promise<ApiBundleSummary[]>;
+    detail(bundleId: string): Promise<ApiBundleDetail>;
+    create(input: BundleInput): Promise<ApiBundleDetail>;
+    /** Ghi nhan da tra moi khoan no cua cac nguoi duoc chon o tung cuoc con. */
+    settle(
+      bundleId: string,
+      input: BundleSettleInput,
+    ): Promise<ApiBundleDetail>;
+    remove(bundleId: string): Promise<{ ok: boolean }>;
   };
   gameEvents: {
     /** Lich su thao tac cua cuoc chia, moi nhat truoc. */

@@ -11,6 +11,7 @@ import {
   rateLimitPost,
 } from "./lib/rate-limit-middleware";
 import { aiRouter } from "./routes/ai";
+import { bundlesRouter } from "./routes/bundles";
 import { crossBalancesRouter } from "./routes/cross-balances";
 import { emailSummaryRouter } from "./routes/email-summary";
 import { funStatsRouter } from "./routes/fun-stats";
@@ -157,6 +158,7 @@ app.route("/api", aiRouter);
 app.route("/api", photosRouter);
 app.route("/api", gamesRouter);
 app.route("/api", funStatsRouter);
+app.route("/api", bundlesRouter);
 app.route("/api", crossBalancesRouter);
 app.route("/api", sessionRouter);
 app.route("/api", profileRouter);

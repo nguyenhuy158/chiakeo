@@ -3,6 +3,7 @@
 // (sequence, cascade khi xoa, split chi tinh nguoi con song).
 
 import type {
+  BundleRow,
   CollaboratorRow,
   DeviceCodeRow,
   ExpenseRow,
@@ -33,6 +34,7 @@ export type FakeState = {
   collaborators: CollaboratorRow[];
   shareLinks: ShareLinkRow[];
   sharePreviews: { gameId: string; data: string; updatedAt: string }[];
+  bundles: BundleRow[];
   paymentRequests: PaymentRequestRow[];
   paymentTransactions: PaymentTransactionRow[];
   shuttleEntries: ShuttleEntryRow[];
@@ -90,6 +92,7 @@ function emptyState(): FakeState {
     collaborators: [],
     shareLinks: [],
     sharePreviews: [],
+    bundles: [],
     paymentRequests: [],
     paymentTransactions: [],
     shuttleEntries: [],
@@ -373,6 +376,20 @@ export function createFakeRepo(initial: Partial<FakeState> = {}) {
       upsert: async () => {},
       update: async () => {},
       delete: async () => {},
+    },
+    bundles: {
+      async listByOwner(userId) {
+        return state.bundles.filter((row) => row.ownerUserId === userId);
+      },
+      async getById(bundleId) {
+        return state.bundles.find((row) => row.id === bundleId) || null;
+      },
+      async insert(row) {
+        state.bundles.push({ ...row, gameIds: [...row.gameIds] });
+      },
+      async delete(bundleId) {
+        state.bundles = state.bundles.filter((row) => row.id !== bundleId);
+      },
     },
     paymentRequests: {
       async insert(row) {

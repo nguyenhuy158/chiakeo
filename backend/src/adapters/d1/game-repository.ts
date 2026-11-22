@@ -14,6 +14,7 @@ import { drizzle as drizzleD1 } from "drizzle-orm/d1";
 import { drizzle as drizzleTurso } from "drizzle-orm/libsql/web";
 import type { BaseSQLiteDatabase } from "drizzle-orm/sqlite-core";
 import type {
+  BundleRow,
   CollaboratorRow,
   ExpenseRow,
   ExpenseSplitRow,
@@ -88,6 +89,27 @@ const PHOTO_COLUMNS = {
 };
 
 export function createGameRepository(db: Db): GameRepository {
+  async function withBundleGameIds(
+    rows: (typeof schema.bundles.$inferSelect)[],
+  ): Promise<BundleRow[]> {
+    if (rows.length === 0) return [];
+    const links = await db
+      .select()
+      .from(schema.bundleGames)
+      .where(
+        inArray(
+          schema.bundleGames.bundleId,
+          rows.map((row) => row.id),
+        ),
+      );
+    return rows.map((row) => ({
+      ...row,
+      gameIds: links
+        .filter((link) => link.bundleId === row.id)
+        .map((link) => link.gameId),
+    }));
+  }
+
   const selectPhotos = () => db.select(PHOTO_COLUMNS).from(schema.gamePhotos);
 
   return {
@@ -783,6 +805,35 @@ export function createGameRepository(db: Db): GameRepository {
         await db
           .delete(schema.contacts)
           .where(eq(schema.contacts.id, contactId));
+      },
+    },
+
+    bundles: {
+      async listByOwner(userId): Promise<BundleRow[]> {
+        const rows = await db
+          .select()
+          .from(schema.bundles)
+          .where(eq(schema.bundles.ownerUserId, userId))
+          .orderBy(sql`${schema.bundles.createdAt} desc`);
+        return withBundleGameIds(rows);
+      },
+      async getById(bundleId): Promise<BundleRow | null> {
+        const rows = await db
+          .select()
+          .from(schema.bundles)
+          .where(eq(schema.bundles.id, bundleId))
+          .limit(1);
+        return (await withBundleGameIds(rows))[0] || null;
+      },
+      async insert(row) {
+        const { gameIds, ...bundle } = row;
+        await db.insert(schema.bundles).values(bundle);
+        await db
+          .insert(schema.bundleGames)
+          .values(gameIds.map((gameId) => ({ bundleId: row.id, gameId })));
+      },
+      async delete(bundleId) {
+        await db.delete(schema.bundles).where(eq(schema.bundles.id, bundleId));
       },
     },
 

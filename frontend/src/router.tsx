@@ -130,6 +130,24 @@ const funStatsRoute = createRoute({
   ),
 });
 
+const bundlesRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "/bundles",
+  component: lazyRouteComponent(
+    () => import("./routes/BundlesPage"),
+    "BundlesPage",
+  ),
+});
+
+const bundleRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "/bundles/$bundleId",
+  component: lazyRouteComponent(
+    () => import("./routes/BundlePage"),
+    "BundlePage",
+  ),
+});
+
 const routeTree = rootRoute.addChildren([
   loginRoute,
   deviceLoginRoute,
@@ -141,6 +159,8 @@ const routeTree = rootRoute.addChildren([
     settingsRoute,
     shuttlesRoute,
     funStatsRoute,
+    bundlesRoute,
+    bundleRoute,
   ]),
 ]);
 

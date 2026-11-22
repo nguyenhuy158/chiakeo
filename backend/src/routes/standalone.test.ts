@@ -3,9 +3,12 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ApiCreatedMcpToken } from "../../../shared/api-types";
 import {
   createFakeRepo,
+  FAKE_GAME_ID,
   FAKE_OWNER,
+  gameRow,
 } from "../core/application/fake-game-repository";
 import type { AuthedEnv } from "../lib/require-user";
+import { bundlesRouter } from "./bundles";
 import { crossBalancesRouter } from "./cross-balances";
 import { funStatsRouter } from "./fun-stats";
 import { mcpTokensRouter } from "./mcp-tokens";
@@ -41,6 +44,7 @@ beforeEach(() => {
     c.set("userId", FAKE_OWNER);
     await next();
   });
+  app.route("/api", bundlesRouter);
   app.route("/api", crossBalancesRouter);
   app.route("/api", funStatsRouter);
   app.route("/api", mcpTokensRouter);
@@ -60,6 +64,34 @@ describe("account level HTTP routes", () => {
     const stats = await request("GET", "/fun-stats");
     expect(stats.status).toBe(200);
     expect(await stats.json()).toMatchObject({ gameCount: 1, totalExpense: 0 });
+  });
+
+  it("creates, lists, settles and deletes a parent game", async () => {
+    fake.state.games.push(gameRow({ id: "game_2", code: "SECOND" }));
+    expect(
+      (await request("POST", "/bundles", { name: "x", gameIds: ["a"] })).status,
+    ).toBe(400);
+    const created = await request("POST", "/bundles", {
+      name: "Tháng 8",
+      gameIds: [FAKE_GAME_ID, "game_2"],
+    });
+    expect(created.status).toBe(200);
+    const { id } = (await created.json()) as { id: string };
+    expect(await (await request("GET", "/bundles")).json()).toMatchObject([
+      { id, gameCount: 2 },
+    ]);
+    expect(await (await request("GET", `/bundles/${id}`)).json()).toMatchObject(
+      { name: "Tháng 8" },
+    );
+    expect(
+      (await request("POST", `/bundles/${id}/settle`, { names: [] })).status,
+    ).toBe(400);
+    expect(
+      (await request("POST", `/bundles/${id}/settle`, { names: ["Ai"] }))
+        .status,
+    ).toBe(400);
+    expect((await request("DELETE", `/bundles/${id}`)).status).toBe(200);
+    expect((await request("GET", `/bundles/${id}`)).status).toBe(404);
   });
 
   it("validates and updates the current profile name", async () => {

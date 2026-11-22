@@ -488,3 +488,34 @@ export const deviceCodes = sqliteTable("chiakeo_device_codes", {
   /** Nguoi dung bam Tu choi: CLI nhan access_denied o lan hoi tiep theo. */
   deniedAt: text("denied_at"),
 });
+
+export const bundles = sqliteTable(
+  "chiakeo_bundles",
+  {
+    id: text("id").primaryKey(),
+    ownerUserId: text("owner_user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    createdAt: text("created_at").notNull(),
+  },
+  (table) => [index("chiakeo_bundles_owner_user_id_idx").on(table.ownerUserId)],
+);
+
+export const bundleGames = sqliteTable(
+  "chiakeo_bundle_games",
+  {
+    bundleId: text("bundle_id")
+      .notNull()
+      .references(() => bundles.id, { onDelete: "cascade" }),
+    gameId: text("game_id")
+      .notNull()
+      .references(() => games.id, { onDelete: "cascade" }),
+  },
+  (table) => [
+    uniqueIndex("chiakeo_bundle_games_bundle_game_idx").on(
+      table.bundleId,
+      table.gameId,
+    ),
+  ],
+);
