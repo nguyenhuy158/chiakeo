@@ -68,6 +68,7 @@ function view(overrides: Partial<ApiShareView> = {}): ApiShareView {
     settlementMode: "p2p",
     settlementHostId: "",
     closedAt: null,
+    show: { summary: true, matrix: true, photos: true },
     participants: people,
     expenses: [expense()],
     summary: {
@@ -157,6 +158,16 @@ describe("SharePage", () => {
     render();
     expect(host.textContent).toContain("Tiền sân");
     expect(host.textContent).not.toContain("Khoản đã ẩn");
+  });
+
+  it("shows no tabs when the owner turned every part off", () => {
+    state.view = view({
+      show: { summary: false, matrix: false, photos: false },
+    });
+    render();
+    expect(tab("Bảng chia")).toBeUndefined();
+    expect(tab("Tổng kết")).toBeUndefined();
+    expect(host.textContent).not.toContain("Các khoản chi");
   });
 
   it("shows an empty summary and a fallback for missing payers", () => {

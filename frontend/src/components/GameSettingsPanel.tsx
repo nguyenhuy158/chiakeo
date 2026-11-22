@@ -14,6 +14,9 @@ export function GameSettingsPanel() {
     summaryShowAvatar,
     roundDownRefunds,
     hideSettledGames,
+    shareShowSummary,
+    shareShowMatrix,
+    shareShowPhotos,
   } = usePreferences();
   const updatePreferences = useUpdatePreferences();
 
@@ -44,6 +47,24 @@ export function GameSettingsPanel() {
           updatePreferences.mutate({ summaryShowAvatar: next })
         }
         label="Hiện avatar trước tên trên ảnh"
+      />
+      <p className="text-sm font-medium">Link chia sẻ hiện thêm</p>
+      <Switch
+        checked={shareShowSummary}
+        onChange={(next) =>
+          updatePreferences.mutate({ shareShowSummary: next })
+        }
+        label="Tổng kết và các khoản chi"
+      />
+      <Switch
+        checked={shareShowMatrix}
+        onChange={(next) => updatePreferences.mutate({ shareShowMatrix: next })}
+        label="Bảng chia"
+      />
+      <Switch
+        checked={shareShowPhotos}
+        onChange={(next) => updatePreferences.mutate({ shareShowPhotos: next })}
+        label="Ảnh"
       />
     </div>
   );

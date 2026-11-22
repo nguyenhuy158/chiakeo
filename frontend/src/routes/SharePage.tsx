@@ -404,12 +404,19 @@ export function SharePage() {
   const participantById = new Map(
     view.participants.map((participant) => [participant.id, participant]),
   );
-  const tabs: Array<{ id: ShareTab; label: string; icon: typeof ListChecks }> =
-    [
-      { id: "summary", label: "Tổng kết", icon: ListChecks },
-      { id: "matrix", label: "Bảng chia", icon: Table2 },
-      { id: "photos", label: "Ảnh", icon: Images },
-    ];
+  const allTabs: Array<{
+    id: ShareTab;
+    label: string;
+    icon: typeof ListChecks;
+  }> = [
+    { id: "summary", label: "Tổng kết", icon: ListChecks },
+    { id: "matrix", label: "Bảng chia", icon: Table2 },
+    { id: "photos", label: "Ảnh", icon: Images },
+  ];
+  const tabs = allTabs.filter((tab) => view.show[tab.id]);
+  const currentTab = tabs.some((tab) => tab.id === activeTab)
+    ? activeTab
+    : tabs[0]?.id;
 
   return (
     <div className="mx-auto flex h-dvh w-full max-w-6xl flex-col gap-2 overflow-hidden px-4 py-3 sm:gap-4 sm:px-5 sm:py-4">
@@ -448,30 +455,39 @@ export function SharePage() {
         </div>
       </div>
 
-      <div className="grid shrink-0 grid-cols-3 gap-2 rounded-lg bg-stone-100 p-1 dark:bg-stone-900">
-        {tabs.map((tab) => {
-          const Icon = tab.icon;
-          const isActive = activeTab === tab.id;
-          return (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => setActiveTab(tab.id)}
-              className={`inline-flex h-10 items-center justify-center gap-2 whitespace-nowrap rounded-md px-2 text-sm font-semibold transition sm:px-3 ${
-                isActive
-                  ? "bg-white text-violet-700 shadow-sm dark:bg-stone-800 dark:text-violet-300"
-                  : "text-stone-600 hover:text-stone-950 dark:text-stone-400 dark:hover:text-stone-100"
-              }`}
-            >
-              <Icon size={17} className="hidden sm:block" />
-              {tab.label}
-            </button>
-          );
-        })}
-      </div>
+      {tabs.length > 1 && (
+        <div
+          className="grid shrink-0 gap-2 rounded-lg bg-stone-100 p-1 dark:bg-stone-900"
+          style={{ gridTemplateColumns: `repeat(${tabs.length}, 1fr)` }}
+        >
+          {tabs.map((tab) => {
+            const Icon = tab.icon;
+            const isActive = currentTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setActiveTab(tab.id)}
+                className={`inline-flex h-10 items-center justify-center gap-2 whitespace-nowrap rounded-md px-2 text-sm font-semibold transition sm:px-3 ${
+                  isActive
+                    ? "bg-white text-violet-700 shadow-sm dark:bg-stone-800 dark:text-violet-300"
+                    : "text-stone-600 hover:text-stone-950 dark:text-stone-400 dark:hover:text-stone-100"
+                }`}
+              >
+                <Icon size={17} className="hidden sm:block" />
+                {tab.label}
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       <div className="min-h-0 flex-1 overflow-hidden md:overflow-auto">
-        {activeTab === "photos" ? (
+        {currentTab === undefined ? (
+          <div className="mx-auto w-full max-w-2xl">
+            <SharePaymentPanel token={token} participants={view.participants} />
+          </div>
+        ) : currentTab === "photos" ? (
           <>
             <div className="h-full md:hidden">
               <SharePhotoGallery
@@ -484,7 +500,7 @@ export function SharePage() {
               <SharePhotoGallery token={token} expenses={view.expenses} />
             </div>
           </>
-        ) : activeTab === "summary" ? (
+        ) : currentTab === "summary" ? (
           <>
             <div className="flex h-full min-h-0 flex-col gap-2 md:hidden">
               <SharePaymentPanel

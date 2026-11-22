@@ -305,6 +305,12 @@ export const userPreferencesSchema = z.object({
   hideSettledGames: z.boolean(),
   /** Tag da tao, dung lai khi gan cho cuoc choi. */
   tags: tagListSchema(MAX_USER_TAGS),
+  /** Link chia se: hien tab Tong ket (so du + cac khoan chi). */
+  shareShowSummary: z.boolean(),
+  /** Link chia se: hien tab Bang chia. */
+  shareShowMatrix: z.boolean(),
+  /** Link chia se: hien tab Anh. */
+  shareShowPhotos: z.boolean(),
 });
 
 export const DEFAULT_USER_PREFERENCES: UserPreferences = {
@@ -313,6 +319,9 @@ export const DEFAULT_USER_PREFERENCES: UserPreferences = {
   roundDownRefunds: false,
   hideSettledGames: false,
   tags: [],
+  shareShowSummary: false,
+  shareShowMatrix: false,
+  shareShowPhotos: false,
 };
 
 export const USER_PREFERENCE_KEYS = Object.keys(

@@ -26,6 +26,7 @@ import type {
   GameRow,
 } from "../ports/game-repository";
 import { countRealExpenses, syncAutoClose } from "./game-closing";
+import { getUserPreferences } from "./user-preferences";
 
 /** Cot trong DB la TEXT tu do, ep ve mot gia tri hop le truoc khi tra ve. */
 function toSettlementMode(value: string) {
@@ -234,6 +235,7 @@ export async function loadShareView(
   game: GameRow,
 ): Promise<ApiShareView> {
   const { participants, expenses, summary } = await loadGameData(repo, game.id);
+  const { preferences } = await getUserPreferences(repo, game.ownerUserId);
 
   return {
     code: game.code,
@@ -241,6 +243,11 @@ export async function loadShareView(
     settlementMode: toSettlementMode(game.settlementMode),
     settlementHostId: game.settlementHostId || "",
     closedAt: game.closedAt,
+    show: {
+      summary: preferences.shareShowSummary,
+      matrix: preferences.shareShowMatrix,
+      photos: preferences.shareShowPhotos,
+    },
     participants,
     expenses,
     summary,
