@@ -13,13 +13,13 @@ Run `chiakeo` with no arguments to see all commands. Needs Node 22 or newer.
 
 ## What you can do
 
-Everything you can do on the website, except uploading photos and reading a receipt from a photo:
+Everything you can do on the website:
 
 - **Games:** list, show, create, rename, close, reopen, archive, duplicate, trash, restore, delete for good, history and undo, CSV report, email the summary.
 - **People and contacts:** add, edit, remove, with bank details.
-- **Expenses:** add, edit, remove, exclude, split equally, by shares or by amounts, income, payments between people, ask the AI to read an expense from text.
+- **Expenses:** add, edit, remove, exclude, split equally, by shares or by amounts, income, payments between people, ask the AI to read an expense from text or from a receipt photo (`receipt`).
 - **Sharing:** public link (on, off, new), editors by email.
-- **Photos and QR:** list, save, caption and delete photos, save a payment QR image.
+- **Photos and QR:** add, list, save, caption and delete photos, save a payment QR image. The CLI does not resize: `photo-add` takes a JPEG, PNG or WebP of about 180 KB or less. Resize bigger photos first. `receipt` takes a photo of up to about 6 MB.
 - **Shuttlecocks, stats and options:** stock, fun stats, balances across games, your name and options.
 
 Example:
