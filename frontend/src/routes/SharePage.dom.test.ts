@@ -21,13 +21,10 @@ vi.mock("../adapters/react-query/queries", () => ({
     return { isPending: state.loading, isError: state.error, data: state.view };
   },
 }));
-vi.mock("../components/GameDashboard", () => ({
-  GameDashboard: () => "game dashboard",
+vi.mock("../components/SettlementTableCard", () => ({
+  SettlementTableCard: () => "settlement table",
 }));
 vi.mock("../components/CopyMenu", () => ({ CopyMenu: () => "copy menu" }));
-vi.mock("../components/SharePaymentPanel", () => ({
-  SharePaymentPanel: () => "payment panel",
-}));
 vi.mock("../components/SharePhotoGallery", () => ({
   SharePhotoGallery: () => "photo gallery",
 }));
@@ -68,7 +65,8 @@ function view(overrides: Partial<ApiShareView> = {}): ApiShareView {
     settlementMode: "p2p",
     settlementHostId: "",
     closedAt: null,
-    show: { summary: true, matrix: true, photos: true },
+    shareShow: ["expenses", "matrix", "photos"],
+    roundDownRefunds: false,
     participants: people,
     expenses: [expense()],
     summary: {
@@ -141,7 +139,10 @@ describe("SharePage", () => {
     expect(host.textContent).toContain("CK01");
     expect(host.textContent).toContain("Cầu tối");
     expect(host.textContent).toContain("Đã đóng");
-    expect(host.textContent).toContain("game dashboard");
+    expect(host.textContent).toContain("settlement table");
+    expect(host.textContent).not.toContain("payment panel");
+    expect(host.textContent).not.toContain("Tiền sân");
+    act(() => tab("Chi tiêu").click());
     expect(host.textContent).toContain("Tiền sân");
     expect(host.textContent).not.toContain("Trả nợ");
     expect(host.textContent).toContain("An trả, chia 2 người");
@@ -156,23 +157,45 @@ describe("SharePage", () => {
       ],
     });
     render();
+    act(() => tab("Chi tiêu").click());
     expect(host.textContent).toContain("Tiền sân");
     expect(host.textContent).not.toContain("Khoản đã ẩn");
   });
 
-  it("shows no tabs when the owner turned every part off", () => {
-    state.view = view({
-      show: { summary: false, matrix: false, photos: false },
-    });
+  it("shows only the summary table when the owner turned every part off", () => {
+    state.view = view({ shareShow: [] });
     render();
     expect(tab("Bảng chia")).toBeUndefined();
-    expect(tab("Tổng kết")).toBeUndefined();
+    expect(tab("Chi tiêu")).toBeUndefined();
+    expect(tab("Ảnh")).toBeUndefined();
+    expect(host.textContent).toContain("settlement table");
     expect(host.textContent).not.toContain("Các khoản chi");
+  });
+
+  it("shows only the tabs the owner turned on", () => {
+    state.view = view({ shareShow: ["photos"] });
+    render();
+    expect(tab("Tổng hợp")).toBeDefined();
+    expect(tab("Ảnh")).toBeDefined();
+    expect(tab("Chi tiêu")).toBeUndefined();
+    expect(tab("Bảng chia")).toBeUndefined();
+  });
+
+  it("falls back to the summary when the open tab is turned off", () => {
+    state.view = view();
+    render();
+    act(() => tab("Ảnh").click());
+    expect(host.textContent).toContain("photo gallery");
+    state.view = view({ shareShow: [] });
+    render();
+    expect(host.textContent).toContain("settlement table");
+    expect(host.textContent).not.toContain("photo gallery");
   });
 
   it("shows an empty summary and a fallback for missing payers", () => {
     state.view = view({ expenses: [] });
     render();
+    act(() => tab("Chi tiêu").click());
     expect(host.textContent).toContain("Chưa có khoản chi nào");
     expect(host.textContent).not.toContain("Đã đóng");
     state.view = view({
@@ -234,8 +257,8 @@ describe("SharePage", () => {
     await vi.waitFor(() =>
       expect(document.body.querySelectorAll("article")).toHaveLength(0),
     );
-    act(() => tab("Tổng kết").click());
-    expect(host.textContent).toContain("game dashboard");
+    act(() => tab("Tổng hợp").click());
+    expect(host.textContent).toContain("settlement table");
   });
 
   it("renders matrix with no participants, balances, or expenses", () => {

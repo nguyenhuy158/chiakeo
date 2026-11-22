@@ -7,6 +7,7 @@ import {
   gameRow,
   participantRow,
 } from "./fake-game-repository";
+import { loadShareView } from "./game-detail";
 import {
   archiveGame,
   createGame,
@@ -127,6 +128,19 @@ describe("game use cases", () => {
       "Cầu lông",
       "Thứ 7",
     ]);
+  });
+
+  it("lưu phần hiện thêm trên link chia sẻ và trả về cho trang chia sẻ", async () => {
+    const fake = createFakeRepo();
+    const detail = await updateGame(fake.repo, FAKE_OWNER, FAKE_GAME_ID, {
+      shareShow: ["matrix", "photos"],
+    });
+    expect(detail.shareShow).toEqual(["matrix", "photos"]);
+    const game = await fake.repo.games.getById(FAKE_GAME_ID);
+    if (!game) throw new Error("missing game");
+    const view = await loadShareView(fake.repo, game);
+    expect(view.shareShow).toEqual(["matrix", "photos"]);
+    expect(view.roundDownRefunds).toBe(false);
   });
 
   it("từ chối sửa trống hoặc sửa cuộc không tồn tại", async () => {

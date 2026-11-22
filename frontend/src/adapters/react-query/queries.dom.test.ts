@@ -80,6 +80,7 @@ import {
   useUpdateParticipant,
   useUpdatePhoto,
   useUpdatePreferences,
+  useUpdateShareShow,
 } from "./queries";
 
 let host: HTMLDivElement;
@@ -213,6 +214,17 @@ describe("React Query game mutations", () => {
       tags: ["Cầu lông"],
     });
     expect(refresh).toHaveBeenCalledWith({ queryKey: ["preferences"] });
+  });
+
+  it("lưu phần hiện thêm trên link chia sẻ của một kèo", async () => {
+    client.setQueryData(gameKeys.detail("game"), detail("Kèo"));
+    const update = vi.fn().mockResolvedValue(detail("Kèo"));
+    provideGameApi({ games: { update } } as unknown as GameApiPort);
+    const current = mount(() => useUpdateShareShow("game"));
+    await act(async () => {
+      await current().mutateAsync(["matrix"]);
+    });
+    expect(update).toHaveBeenCalledWith("game", { shareShow: ["matrix"] });
   });
 
   it("sắp lại người chơi trong cache", async () => {

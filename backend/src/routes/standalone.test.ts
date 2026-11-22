@@ -148,9 +148,6 @@ describe("account level HTTP routes", () => {
         roundDownRefunds: false,
         hideSettledGames: false,
         tags: [],
-        shareShowSummary: false,
-        shareShowMatrix: false,
-        shareShowPhotos: false,
       },
     });
     expect(
@@ -167,9 +164,6 @@ describe("account level HTTP routes", () => {
         roundDownRefunds: false,
         hideSettledGames: false,
         tags: [],
-        shareShowSummary: false,
-        shareShowMatrix: false,
-        shareShowPhotos: false,
       },
     });
     expect(saved.get("summaryShowQr")).toBe("false");

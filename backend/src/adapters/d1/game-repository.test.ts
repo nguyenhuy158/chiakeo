@@ -197,6 +197,7 @@ describe("D1 game repository", () => {
         settlementHostId: "",
         location: "",
         tags: [],
+        shareShow: [],
         createdAt: now,
         updatedAt: now,
         deletedAt: null,

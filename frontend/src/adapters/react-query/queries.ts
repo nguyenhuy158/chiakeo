@@ -17,6 +17,7 @@ import type {
   PhotoInput,
   PhotoUpdateInput,
   SettlementMode,
+  ShareSection,
   TransferInput,
   UserPreferences,
   UserPreferencesPatch,
@@ -577,6 +578,12 @@ export function useUpdateGameMeta(gameId: string) {
       await queryClient.invalidateQueries({ queryKey: preferenceKeys.all });
       return detail;
     },
+  );
+}
+
+export function useUpdateShareShow(gameId: string) {
+  return useGameDetailMutation((shareShow: ShareSection[]) =>
+    getGameApi().games.update(gameId, { shareShow }),
   );
 }
 
