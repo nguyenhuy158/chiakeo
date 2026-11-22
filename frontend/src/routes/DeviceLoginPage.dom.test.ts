@@ -145,14 +145,16 @@ describe("DeviceLoginPage", () => {
     expect(button("Tiếp tục").disabled).toBe(true);
     expect(host.textContent).toContain("Nhập đủ 8 ký tự");
     type(codeInput(), "abcd2345zz");
-    expect(codeInput().value).toBe("ABCD-2345");
+    expect(codeInput().value).toBe("ABCD2345");
+    expect(host.textContent).toContain("ABCD-2345");
     type(codeInput(), "ab");
     expect(codeInput().value).toBe("AB");
     type(codeInput(), "abcd-2345");
+    expect(codeInput().value).toBe("ABCD2345");
     expect(button("Tiếp tục").disabled).toBe(false);
     expect(host.textContent).not.toContain("Nhập đủ 8 ký tự");
     submit();
-    expect(lookup.mutate).toHaveBeenCalledWith("ABCD-2345");
+    expect(lookup.mutate).toHaveBeenCalledWith("ABCD2345");
   });
 
   it("never fills the code from the link", () => {

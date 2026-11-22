@@ -14,8 +14,8 @@ import { LoadingState } from "../components/ui";
 import { Alert } from "../ui/Alert";
 import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
+import { CodeInput } from "../ui/CodeInput";
 import { Field } from "../ui/Field";
-import { Input } from "../ui/Input";
 
 const ERROR_MESSAGE: Record<string, string> = {
   not_found:
@@ -26,19 +26,7 @@ const ERROR_MESSAGE: Record<string, string> = {
 };
 const FALLBACK_ERROR = "Không duyệt được, thử lại sau.";
 const CODE_LENGTH = 8;
-const CODE_GROUP = CODE_LENGTH / 2;
 const CODE_HINT = "Nhập đủ 8 ký tự để bật nút Tiếp tục.";
-
-/** Giu chu va so viet hoa, toi da 8 ky tu, chen dau gach giua: ABCD-2345. */
-function formatCode(raw: string) {
-  const compact = raw
-    .toUpperCase()
-    .replace(/[^A-Z0-9]/g, "")
-    .slice(0, CODE_LENGTH);
-  return compact.length > CODE_GROUP
-    ? `${compact.slice(0, CODE_GROUP)}-${compact.slice(CODE_GROUP)}`
-    : compact;
-}
 
 function Frame({ children }: { children: React.ReactNode }) {
   return (
@@ -213,24 +201,16 @@ export function DeviceLoginPage() {
           className="mt-6"
           label="Mã trên terminal"
           error={errorMessage || undefined}
-          hint={code.length === CODE_LENGTH + 1 ? undefined : CODE_HINT}
+          hint={code.length === CODE_LENGTH ? undefined : CODE_HINT}
         >
-          <Input
-            value={code}
-            onChange={(event) => setCode(formatCode(event.target.value))}
-            placeholder="ABCD-2345"
-            autoComplete="one-time-code"
-            autoCapitalize="characters"
-            spellCheck={false}
-            className="h-14 text-center font-mono text-2xl tracking-[0.3em] sm:h-14"
-          />
+          <CodeInput value={code} onChange={setCode} />
         </Field>
         <div className="mt-6 flex flex-col gap-2">
           <Button
             block
             type="submit"
             loading={lookup.isPending}
-            disabled={code.length !== CODE_LENGTH + 1}
+            disabled={code.length !== CODE_LENGTH}
           >
             Tiếp tục
           </Button>

@@ -18,6 +18,7 @@ import { chromium } from "playwright-core";
 
 const BASE = process.env.E2E_BASE_URL || "http://127.0.0.1:8787";
 const WAIT = { timeout: 15000 };
+const CODE_LABEL = "Mã trên terminal";
 const DEVICE_GRANT_TYPE = "urn:ietf:params:oauth:grant-type:device_code";
 const E2E_PASSWORD = "matkhau123";
 
@@ -806,7 +807,7 @@ try {
     true,
     "/login/device cuon tren dien thoai",
   );
-  await page.fill("input[placeholder='ABCD-2345']", flow.user_code);
+  await page.getByLabel(CODE_LABEL).fill(flow.user_code);
   await page.click('button:has-text("Tiếp tục")');
   await page.waitForSelector('h1:has-text("E2E CLI")', WAIT);
   assert.equal(
@@ -847,13 +848,13 @@ try {
     )
   ).body;
   await page.goto(`${BASE}/login/device?user_code=${denied.user_code}`);
-  await page.waitForSelector("input[placeholder='ABCD-2345']", WAIT);
+  await page.getByLabel(CODE_LABEL).waitFor(WAIT);
   assert.equal(
-    await page.inputValue("input[placeholder='ABCD-2345']"),
+    await page.getByLabel(CODE_LABEL).inputValue(),
     "",
     "trang khong duoc dien san ma tu URL",
   );
-  await page.fill("input[placeholder='ABCD-2345']", denied.user_code);
+  await page.getByLabel(CODE_LABEL).fill(denied.user_code);
   await page.click('button:has-text("Tiếp tục")');
   await page.waitForSelector('h1:has-text("Evil laptop")', WAIT);
   await page.click('button:has-text("Từ chối")');
@@ -906,7 +907,7 @@ try {
     }, 15000);
   });
   await page.goto(`${BASE}/login/device`);
-  await page.fill("input[placeholder='ABCD-2345']", cliCode);
+  await page.getByLabel(CODE_LABEL).fill(cliCode);
   await page.click('button:has-text("Tiếp tục")');
   await page.waitForSelector('h1:has-text("E2E binary")', WAIT);
   await page.click('button:has-text("Cho phép")');
