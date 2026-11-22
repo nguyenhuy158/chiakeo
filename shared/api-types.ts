@@ -153,6 +153,8 @@ export type ApiShareView = {
   settlementHostId: string;
   /** Luc cuoc choi duoc dong; null la dang choi. Nguoi xem link chi doc. */
   closedAt: string | null;
+  /** Tab nao chu cuoc choi cho hien tren link chia se (mac dinh tat ca tat). */
+  show: { summary: boolean; matrix: boolean; photos: boolean };
   participants: ApiParticipant[];
   expenses: ApiExpense[];
   summary: ApiSummary;
