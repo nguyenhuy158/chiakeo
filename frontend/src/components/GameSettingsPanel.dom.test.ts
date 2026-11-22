@@ -8,6 +8,9 @@ const { preferences, mutate } = vi.hoisted(() => ({
     summaryShowAvatar: true,
     roundDownRefunds: false,
     hideSettledGames: false,
+    shareShowSummary: false,
+    shareShowMatrix: false,
+    shareShowPhotos: false,
   },
   mutate: vi.fn(),
 }));
@@ -56,5 +59,11 @@ describe("GameSettingsPanel", () => {
     expect(mutate).toHaveBeenCalledWith({ summaryShowQr: false });
     act(() => toggle("Hiện avatar").click());
     expect(mutate).toHaveBeenCalledWith({ summaryShowAvatar: false });
+    act(() => toggle("Tổng kết và các khoản chi").click());
+    expect(mutate).toHaveBeenCalledWith({ shareShowSummary: true });
+    act(() => toggle("Bảng chia").click());
+    expect(mutate).toHaveBeenCalledWith({ shareShowMatrix: true });
+    act(() => toggle("Ảnh").click());
+    expect(mutate).toHaveBeenCalledWith({ shareShowPhotos: true });
   });
 });
