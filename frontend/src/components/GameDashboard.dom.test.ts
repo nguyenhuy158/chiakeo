@@ -460,6 +460,19 @@ describe("GameDashboard compact", () => {
     await act(async () => button("Đã trả (2)")?.click());
     expect(onSettleMany).toHaveBeenCalledWith(two.settlements);
     expect(button("Đã trả (0)")).toBeDefined();
+    const all = () =>
+      host.querySelectorAll<HTMLInputElement>("input[type=checkbox]")[0];
+    act(() => all()?.click());
+    expect(button("Đã trả (2)")).toBeDefined();
+    act(() => all()?.click());
+    expect(button("Đã trả (0)")).toBeDefined();
+    const row = () =>
+      host.querySelector<HTMLInputElement>(
+        "input[aria-label='Chọn Châu trả An']",
+      );
+    act(() => row()?.click());
+    act(() => row()?.click());
+    expect(button("Đã trả (0)")).toBeDefined();
   });
 
   it("đóng Sheet bằng Escape và ẩn QR khi không dựng được", async () => {

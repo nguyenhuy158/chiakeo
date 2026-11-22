@@ -616,11 +616,6 @@ function GameDashboardCompact({
     );
   }
 
-  async function settleSelected() {
-    await onSettleMany?.(selectedRows.map((row) => row.settlement));
-    setSelectedKeys(new Set());
-  }
-
   function openRow(row: TransferRow) {
     setActiveRow(row);
     setRowOpen(true);
@@ -744,7 +739,12 @@ function GameDashboardCompact({
                 />
                 <button
                   type="button"
-                  onClick={settleSelected}
+                  onClick={async () => {
+                    await onSettleMany(
+                      selectedRows.map((row) => row.settlement),
+                    );
+                    setSelectedKeys(new Set());
+                  }}
                   disabled={settlePending || selectedRows.length === 0}
                   className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-md border border-emerald-300 bg-emerald-50 px-2.5 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-100 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 dark:border-emerald-500/40 dark:bg-emerald-500/10 dark:text-emerald-300"
                   title="Ghi nhận các khoản đã chọn đã được chuyển"

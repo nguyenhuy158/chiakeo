@@ -697,6 +697,29 @@ describe("GamePage", () => {
     expect(mocks.mutation.AddTransfer.mutateAsync).not.toHaveBeenCalled();
   });
 
+  it("records many selected transfers after one confirm", async () => {
+    render();
+    await click("summary");
+    const dashboard = mocks.props.GameDashboard as {
+      onSettleMany: (value: unknown[]) => Promise<void>;
+    };
+    const settlements = [
+      { fromParticipantId: "an", toParticipantId: "binh", amount: 100 },
+      { fromParticipantId: "chau", toParticipantId: "binh", amount: 50 },
+    ];
+    mocks.confirm.mockResolvedValueOnce(false);
+    await act(async () => dashboard.onSettleMany(settlements));
+    expect(mocks.mutation.AddTransfer.mutateAsync).not.toHaveBeenCalled();
+    await act(async () => dashboard.onSettleMany(settlements));
+    expect(mocks.confirm).toHaveBeenLastCalledWith(
+      expect.objectContaining({ title: "Ghi nhận 2 khoản đã trả?" }),
+    );
+    expect(mocks.mutation.AddTransfer.mutateAsync).toHaveBeenCalledTimes(2);
+    expect(mocks.toast.success).toHaveBeenCalledWith(
+      "Đã ghi nhận 2 khoản trả nợ",
+    );
+  });
+
   it("handles photos still loading", async () => {
     mocks.photos = undefined;
     render();
