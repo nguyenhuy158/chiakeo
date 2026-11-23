@@ -14,6 +14,7 @@ import {
   usePreferences,
 } from "../adapters/react-query/queries";
 import { ArchivedGamesCard } from "./ArchivedGamesCard";
+import { BulkArchiveGames } from "./BulkArchiveGames";
 import { ClosedGamesCard } from "./ClosedGamesCard";
 import { CollectionRibbon } from "./CollectionRibbon";
 import { PlayedDatePicker } from "./PlayedDatePicker";
@@ -256,6 +257,7 @@ export function GamesSidebar({ onNavigate }: { onNavigate?: () => void }) {
         )}
       </section>
       <ClosedGamesCard onNavigate={onNavigate} />
+      <BulkArchiveGames />
       <ArchivedGamesCard onNavigate={onNavigate} />
       <TrashCard />
     </aside>
