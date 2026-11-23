@@ -269,6 +269,9 @@ describe("ParticipantPanel compact", () => {
     render([person("An")], false, true);
     expect(sheetName()).toBeNull();
     act(() => button("Mở form thêm người")?.click());
+    expect(sheetName()).toBeNull();
+    expect(sheetButton("Chọn từ người quen")).toBeDefined();
+    act(() => sheetButton("Tạo người mới")?.click());
     typeName("Châu");
     await submitSheet();
     expect(onAdd).toHaveBeenCalledWith(
@@ -276,6 +279,20 @@ describe("ParticipantPanel compact", () => {
     );
     pressEscape();
     await vi.waitFor(() => expect(sheetName()).toBeNull());
+  });
+
+  it("quay lại bước chọn từ form tạo người mới và từ danh sách người quen", () => {
+    render([person("An")], false, true);
+    act(() => button("Mở form thêm người")?.click());
+    act(() => sheetButton("Tạo người mới")?.click());
+    expect(sheetName()).not.toBeNull();
+    act(() => sheetButton("Quay lại")?.click());
+    expect(sheetName()).toBeNull();
+    act(() => sheetButton("Chọn từ người quen")?.click());
+    expect(sheetName()).toBeNull();
+    expect(sheetButton("Quay lại")).toBeDefined();
+    act(() => sheetButton("Quay lại")?.click());
+    expect(sheetButton("Tạo người mới")).toBeDefined();
   });
 
   it("đưa lên, đưa xuống và khóa nút ở đầu, cuối danh sách", () => {
