@@ -48,6 +48,8 @@ export function gameRow(overrides: Partial<GameRow> = {}): GameRow {
     ownerUserId: OWNER_USER_ID,
     code: "DSKVUF",
     name: "Cầu lông",
+    playedFrom: "",
+    playedTo: "",
     settlementMode: "host",
     settlementHostId: "",
     location: "",

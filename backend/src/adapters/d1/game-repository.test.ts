@@ -193,6 +193,8 @@ describe("D1 game repository", () => {
         ownerUserId: "owner",
         code: id.toUpperCase(),
         name: id,
+        playedFrom: "",
+        playedTo: "",
         settlementMode: "p2p",
         settlementHostId: "",
         location: "",

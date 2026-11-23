@@ -40,7 +40,7 @@ describe("Worker entrypoint", () => {
     const health = await app.request("/api/health", undefined, env);
     expect(health.status).toBe(200);
     expect(await health.json()).toEqual({ ok: true, db: "ok" });
-    expect(first).toHaveBeenCalledOnce();
+    expect(first).toHaveBeenCalledTimes(2);
   });
 
   it("does not grant CORS to an untrusted origin", async () => {
@@ -55,6 +55,16 @@ describe("Worker entrypoint", () => {
 
   it("returns an actionable database health error", async () => {
     first.mockRejectedValue(new Error("no table"));
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const response = await app.request("/api/health", undefined, env);
+    expect(response.status).toBe(500);
+    expect(await response.json()).toMatchObject({ ok: false, db: "error" });
+  });
+
+  it("fails health when game date columns are missing even if users are readable", async () => {
+    first
+      .mockResolvedValueOnce({ one: 1 })
+      .mockRejectedValueOnce(new Error("no such column: played_from"));
     vi.spyOn(console, "error").mockImplementation(() => {});
     const response = await app.request("/api/health", undefined, env);
     expect(response.status).toBe(500);

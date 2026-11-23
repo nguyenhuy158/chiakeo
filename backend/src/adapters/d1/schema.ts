@@ -85,6 +85,8 @@ export const games = sqliteTable(
       .references(() => user.id, { onDelete: "cascade" }),
     code: text("code").notNull(),
     name: text("name").notNull(),
+    playedFrom: text("played_from").notNull().default(""),
+    playedTo: text("played_to").notNull().default(""),
     // "p2p" | "host" | "pick" | "off" — xem SETTLEMENT_MODES o shared/schemas.ts.
     settlementMode: text("settlement_mode").notNull().default("p2p"),
     // Dau moi da chon cho che do "pick"; rong la chua chon.

@@ -67,7 +67,9 @@ app.get("/api/version", (c) => c.json(BUILD_INFO));
 
 app.get("/api/health", async (c) => {
   try {
-    await createDb(c.env).run(sql`SELECT 1 FROM chiakeo_user LIMIT 1`);
+    const db = createDb(c.env);
+    await db.run(sql`SELECT 1 FROM chiakeo_user LIMIT 1`);
+    await db.run(sql`SELECT played_from, played_to FROM chiakeo_games LIMIT 1`);
     return c.json({ ok: true, db: "ok" });
   } catch (error) {
     console.error("Database health check failed:", error);
