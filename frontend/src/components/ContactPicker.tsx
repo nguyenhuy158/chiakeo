@@ -17,6 +17,7 @@ type ContactPickerProps = {
   participants: ApiParticipant[];
   pending: boolean;
   onAddMany: (people: ParticipantInput[]) => Promise<unknown>;
+  standalone?: boolean;
 };
 
 function toInput(contact: Contact): ParticipantInput {
@@ -36,6 +37,7 @@ export function ContactPicker({
   participants,
   pending,
   onAddMany,
+  standalone = false,
 }: ContactPickerProps) {
   const contactsQuery = useContacts();
   const [chosen, setChosen] = useState<string[]>([]);
@@ -63,7 +65,13 @@ export function ContactPicker({
     [contacts, alreadyIn],
   );
 
-  if (contactsQuery.isPending || contacts.length === 0) return null;
+  if (contactsQuery.isPending || contacts.length === 0) {
+    return standalone ? (
+      <p className="py-4 text-center text-sm text-fg-muted">
+        Chưa có người quen. Hãy tạo người mới.
+      </p>
+    ) : null;
+  }
 
   const selectable = sorted.filter((contact) => !alreadyIn.has(contact.key));
   // Bo chon nguoi vua duoc them o cuoc chia nay (chon roi moi bam Them).
@@ -90,7 +98,9 @@ export function ContactPicker({
   }
 
   return (
-    <div className="mb-4 rounded-md border border-border bg-stone-50 p-3 dark:bg-stone-950">
+    <div
+      className={`${standalone ? "" : "mb-4 "}rounded-md border border-border bg-stone-50 p-3 dark:bg-stone-950`}
+    >
       <div className="flex items-center gap-2">
         <BookUser size={15} className="text-violet-600 dark:text-violet-400" />
         <p className="text-xs font-semibold text-stone-700 dark:text-stone-200">

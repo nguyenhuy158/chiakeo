@@ -1,5 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
+  ArrowLeft,
+  BookUser,
   Check,
   ChevronDown,
   ChevronUp,
@@ -8,6 +10,7 @@ import {
   Pencil,
   Plus,
   Trash2,
+  UserPlus,
   Users,
   X,
 } from "lucide-react";
@@ -45,6 +48,8 @@ const emptyForm: ParticipantFormValues = {
 
 const COMPACT_ROW_HEIGHT_PX = 60;
 
+type AddMode = "contacts" | "new";
+
 type ParticipantPanelProps = {
   participants: ApiParticipant[];
   pending: boolean;
@@ -75,9 +80,14 @@ export function ParticipantPanel({
   >(null);
   const [showBank, setShowBank] = useState(false);
   const [formOpen, setFormOpen] = useState(false);
+  const [addMode, setAddMode] = useState<AddMode | null>(null);
   const [actionsOpen, setActionsOpen] = useState(false);
   const [actionParticipantId, setActionParticipantId] = useState("");
   const bankVisible = Boolean(editingParticipantId) || showBank;
+  const splitAdd = compact && !editingParticipantId;
+  const showContacts =
+    !editingParticipantId && (!splitAdd || addMode === "contacts");
+  const showNewForm = !splitAdd || addMode === "new";
   const form = useForm<ParticipantFormValues>({
     resolver: zodResolver(participantFormSchema),
     defaultValues: emptyForm,
@@ -137,6 +147,7 @@ export function ParticipantPanel({
 
   function cancelEdit() {
     setFormOpen(false);
+    setAddMode(null);
     setEditingParticipantId(null);
     form.reset(emptyForm);
   }
@@ -153,99 +164,131 @@ export function ParticipantPanel({
 
   const formBlock = (
     <>
-      {/* Chi hien luc them nguoi moi: dang sua mot nguoi thi form o duoi la trong tam. */}
-      {!editingParticipantId && (
+      {splitAdd && addMode === null && (
+        <div className="grid gap-3 pb-2">
+          <button
+            type="button"
+            onClick={() => setAddMode("contacts")}
+            className="flex min-h-16 w-full items-center gap-3 rounded-md border border-border bg-surface px-4 text-left text-sm font-semibold text-fg transition hover:bg-surface-muted active:scale-[0.99]"
+          >
+            <BookUser size={20} className="shrink-0 text-violet-600" />
+            Chọn từ người quen
+          </button>
+          <button
+            type="button"
+            onClick={() => setAddMode("new")}
+            className="flex min-h-16 w-full items-center gap-3 rounded-md border border-border bg-surface px-4 text-left text-sm font-semibold text-fg transition hover:bg-surface-muted active:scale-[0.99]"
+          >
+            <UserPlus size={20} className="shrink-0 text-violet-600" />
+            Tạo người mới
+          </button>
+        </div>
+      )}
+      {splitAdd && addMode !== null && (
+        <button
+          type="button"
+          onClick={() => setAddMode(null)}
+          className="mb-3 inline-flex min-h-11 items-center gap-2 text-sm font-medium text-violet-700 dark:text-violet-300"
+        >
+          <ArrowLeft size={16} />
+          Quay lại
+        </button>
+      )}
+      {showContacts && (
         <ContactPicker
           participants={participants}
           pending={pending}
           onAddMany={onAddMany}
+          standalone={splitAdd}
         />
       )}
 
-      <form
-        onSubmit={editingParticipantId ? handleSaveEdit : handleAdd}
-        className="grid gap-3 md:grid-cols-2"
-      >
-        <div className={bankVisible ? "" : "md:col-span-2"}>
-          <Field label="Tên" error={form.formState.errors.name?.message}>
-            <input
-              {...form.register("name")}
-              className="field"
-              placeholder="Huy"
-            />
-          </Field>
-        </div>
-        {!editingParticipantId && (
-          <button
-            type="button"
-            onClick={() => setShowBank((current) => !current)}
-            aria-expanded={showBank}
-            className="flex min-h-11 w-full items-center gap-2 text-left text-sm font-medium text-violet-700 dark:text-violet-300 md:col-span-2"
-          >
-            <Landmark size={15} className="shrink-0" />
-            <span className="min-w-0 flex-1">
-              Tài khoản nhận tiền{" "}
-              <span className="font-normal text-fg-muted">
-                (không bắt buộc, để có QR)
-              </span>
-            </span>
-            <ChevronDown
-              size={15}
-              className={`shrink-0 transition ${showBank ? "rotate-180" : ""}`}
-            />
-          </button>
-        )}
-        {bankVisible && (
-          <>
-            <Field label="Ngân hàng">
-              <BankSelect
-                value={form.watch("bankId")}
-                onChange={(bankId) => form.setValue("bankId", bankId)}
-              />
-            </Field>
-            <Field label="Số tài khoản">
+      {showNewForm && (
+        <form
+          onSubmit={editingParticipantId ? handleSaveEdit : handleAdd}
+          className="grid gap-3 md:grid-cols-2"
+        >
+          <div className={bankVisible ? "" : "md:col-span-2"}>
+            <Field label="Tên" error={form.formState.errors.name?.message}>
               <input
-                {...form.register("accountNo")}
+                {...form.register("name")}
                 className="field"
-                inputMode="numeric"
-                autoComplete="off"
-                placeholder="0123456789"
+                placeholder="Huy"
               />
             </Field>
-            <Field label="Tên chủ tài khoản">
-              <input
-                {...form.register("accountName")}
-                className="field"
-                autoCapitalize="characters"
-                autoComplete="off"
-                spellCheck={false}
-                placeholder="NGUYEN VAN A"
-              />
-            </Field>
-          </>
-        )}
-        <div className="md:col-span-2">
-          <button
-            type="submit"
-            disabled={pending}
-            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-semibold text-white transition hover:bg-primary-hover active:scale-[0.99] disabled:cursor-not-allowed disabled:bg-stone-300 dark:disabled:bg-stone-700 sm:w-auto"
-          >
-            {editingParticipantId ? <Check size={17} /> : <Plus size={17} />}
-            {editingParticipantId ? "Lưu thông tin" : "Thêm người"}
-          </button>
-          {editingParticipantId && (
+          </div>
+          {!editingParticipantId && (
             <button
               type="button"
-              onClick={cancelEdit}
-              disabled={pending}
-              className="mt-2 inline-flex h-11 w-full items-center justify-center gap-2 rounded-md border border-stone-300 bg-surface px-4 text-sm font-semibold text-stone-700 transition hover:bg-surface-muted active:scale-[0.99] disabled:cursor-not-allowed disabled:text-stone-400 dark:border-stone-700 dark:text-stone-200 sm:ml-2 sm:mt-0 sm:w-auto"
+              onClick={() => setShowBank((current) => !current)}
+              aria-expanded={showBank}
+              className="flex min-h-11 w-full items-center gap-2 text-left text-sm font-medium text-violet-700 dark:text-violet-300 md:col-span-2"
             >
-              <X size={17} />
-              Hủy
+              <Landmark size={15} className="shrink-0" />
+              <span className="min-w-0 flex-1">
+                Tài khoản nhận tiền{" "}
+                <span className="font-normal text-fg-muted">
+                  (không bắt buộc, để có QR)
+                </span>
+              </span>
+              <ChevronDown
+                size={15}
+                className={`shrink-0 transition ${showBank ? "rotate-180" : ""}`}
+              />
             </button>
           )}
-        </div>
-      </form>
+          {bankVisible && (
+            <>
+              <Field label="Ngân hàng">
+                <BankSelect
+                  value={form.watch("bankId")}
+                  onChange={(bankId) => form.setValue("bankId", bankId)}
+                />
+              </Field>
+              <Field label="Số tài khoản">
+                <input
+                  {...form.register("accountNo")}
+                  className="field"
+                  inputMode="numeric"
+                  autoComplete="off"
+                  placeholder="0123456789"
+                />
+              </Field>
+              <Field label="Tên chủ tài khoản">
+                <input
+                  {...form.register("accountName")}
+                  className="field"
+                  autoCapitalize="characters"
+                  autoComplete="off"
+                  spellCheck={false}
+                  placeholder="NGUYEN VAN A"
+                />
+              </Field>
+            </>
+          )}
+          <div className="md:col-span-2">
+            <button
+              type="submit"
+              disabled={pending}
+              className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-semibold text-white transition hover:bg-primary-hover active:scale-[0.99] disabled:cursor-not-allowed disabled:bg-stone-300 dark:disabled:bg-stone-700 sm:w-auto"
+            >
+              {editingParticipantId ? <Check size={17} /> : <Plus size={17} />}
+              {editingParticipantId ? "Lưu thông tin" : "Thêm người"}
+            </button>
+            {editingParticipantId && (
+              <button
+                type="button"
+                onClick={cancelEdit}
+                disabled={pending}
+                className="mt-2 inline-flex h-11 w-full items-center justify-center gap-2 rounded-md border border-stone-300 bg-surface px-4 text-sm font-semibold text-stone-700 transition hover:bg-surface-muted active:scale-[0.99] disabled:cursor-not-allowed disabled:text-stone-400 dark:border-stone-700 dark:text-stone-200 sm:ml-2 sm:mt-0 sm:w-auto"
+              >
+                <X size={17} />
+                Hủy
+              </button>
+            )}
+          </div>
+        </form>
+      )}
     </>
   );
 
@@ -297,7 +340,10 @@ export function ParticipantPanel({
           </span>
           <button
             type="button"
-            onClick={() => setFormOpen(true)}
+            onClick={() => {
+              setAddMode(null);
+              setFormOpen(true);
+            }}
             aria-label="Mở form thêm người"
             className="ml-auto inline-flex h-11 items-center gap-1.5 rounded-md bg-primary px-3 text-sm font-semibold text-white transition hover:bg-primary-hover active:scale-95"
           >
