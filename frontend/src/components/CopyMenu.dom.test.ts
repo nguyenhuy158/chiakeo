@@ -127,6 +127,7 @@ beforeEach(() => {
   downloadBlob.mockReset();
   renderSummaryImage.mockReset().mockResolvedValue(new Blob(["png"]));
   renderExpenseXlsx.mockReset().mockResolvedValue(new Blob(["xlsx"]));
+  preferences.roundDownRefunds = false;
   preferences.summaryShowQr = true;
   preferences.summaryShowAvatar = true;
   updatePreferences.mockReset();
@@ -424,3 +425,24 @@ describe("CopyMenu", () => {
     expect(error).toHaveBeenCalledWith("Không tạo được file Excel");
   });
 });
+
+it.each([true, false])(
+  "keeps the shared owner rounding choice %s over the viewer preference",
+  async (roundDownRefunds) => {
+    preferences.roundDownRefunds = !roundDownRefunds;
+    act(() =>
+      root.render(
+        createElement(CopyMenu, { input: { ...input(), roundDownRefunds } }),
+      ),
+    );
+    open();
+    await act(async () => item("Copy ảnh").click());
+    expect(renderSummaryImage).toHaveBeenLastCalledWith(
+      expect.objectContaining({ roundDownRefunds }),
+      "compact",
+      "plain",
+      true,
+      true,
+    );
+  },
+);

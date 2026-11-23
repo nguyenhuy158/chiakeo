@@ -19,8 +19,8 @@ import { useShareView } from "../adapters/react-query/queries";
 import { AdaptiveSheet } from "../components/AdaptiveSheet";
 import { CopyMenu } from "../components/CopyMenu";
 import { SharePaymentPanel } from "../components/SharePaymentPanel";
-import { ShareSummaryImage } from "../components/ShareSummaryImage";
 import { SharePhotoGallery } from "../components/SharePhotoGallery";
+import { ShareSummaryImage } from "../components/ShareSummaryImage";
 import { ThemeToggle } from "../components/theme";
 import { EmptyState, GamePageSkeleton } from "../components/ui";
 import { formatMoney } from "../core/domain/money";
@@ -456,6 +456,7 @@ export function SharePage() {
               summary: view.summary,
               settlementMode: view.settlementMode,
               settlementHostId: view.settlementHostId,
+              roundDownRefunds: view.roundDownRefunds,
               shareUrl: window.location.href,
             }}
           />
