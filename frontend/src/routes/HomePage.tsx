@@ -7,6 +7,7 @@ import { useCrossBalances } from "../adapters/react-query/cross-balances-query";
 import { useFunStats } from "../adapters/react-query/fun-stats-query";
 import { useGames, usePreferences } from "../adapters/react-query/queries";
 import { Avatar } from "../components/Avatar";
+import { CollectionRibbon } from "../components/CollectionRibbon";
 import { useMobileShell } from "../components/mobile-shell";
 import { EmptyState, SkeletonCard } from "../components/ui";
 import { formatMoney } from "../core/domain/money";
@@ -175,8 +176,9 @@ export function HomePage() {
               <Link
                 to="/games/$gameId"
                 params={{ gameId: game.id }}
-                className="flex h-full flex-col justify-center rounded-lg border border-border px-3 transition active:bg-surface-muted"
+                className="relative flex h-full flex-col justify-center rounded-lg border border-border px-3 transition active:bg-surface-muted"
               >
+                {isCollectionDone(game) && <CollectionRibbon />}
                 <span className="truncate text-sm font-semibold text-stone-950 dark:text-stone-50">
                   {game.name}
                 </span>

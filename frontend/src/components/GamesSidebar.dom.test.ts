@@ -174,6 +174,16 @@ describe("GamesSidebar", () => {
     expect(host.textContent).toContain("2/4");
   });
 
+  it("shows the collected ribbon only on games fully paid", () => {
+    state.games = [
+      { ...game(), paidProgress: { paid: 4, total: 4 } },
+      { ...game(), id: "game-2", paidProgress: { paid: 1, total: 3 } },
+      { ...game(), id: "game-3" },
+    ];
+    render();
+    expect(host.textContent?.match(/Đã thu đủ/g)).toHaveLength(1);
+  });
+
   it("hides games whose collection is done when the preference is on", () => {
     state.games = [
       { ...game(), paidProgress: { paid: 4, total: 4 } },
