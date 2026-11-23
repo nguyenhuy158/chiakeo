@@ -196,6 +196,23 @@ export function computeSplitRows(
   }));
 }
 
+const TRANSFER_KIND: ExpenseKind = "transfer";
+
+function isTransfer(expense: ExpenseInput) {
+  return expense.kind === TRANSFER_KIND;
+}
+
+function forgivenTransferAmount(payer: BalanceRow, expense: ExpenseInput) {
+  const debt = payer.owed - payer.paid;
+  const overpaid = expense.amount - debt;
+  const roundedUpByPayer =
+    expense.shares.length === 1 &&
+    debt > 0 &&
+    overpaid > 0 &&
+    overpaid < SETTLEMENT_ROUNDING_UNIT;
+  return roundedUpByPayer ? debt : expense.amount;
+}
+
 export function calculateBalances(
   participantIds: string[],
   expenses: ExpenseInput[],
@@ -207,18 +224,26 @@ export function calculateBalances(
     balance: 0,
   }));
   const byId = new Map(rows.map((row) => [row.participantId, row]));
+  const transfersLast = [
+    ...expenses.filter((expense) => !isTransfer(expense)),
+    ...expenses.filter(isTransfer),
+  ];
 
-  for (const expense of expenses) {
+  for (const expense of transfersLast) {
     const payer = byId.get(expense.payerParticipantId);
     if (!payer || expense.shares.length === 0) continue;
 
     const sign = kindSign(expense.kind);
-    payer.paid += sign * expense.amount;
+    const amount = isTransfer(expense)
+      ? forgivenTransferAmount(payer, expense)
+      : expense.amount;
+    payer.paid += sign * amount;
 
     for (const share of expense.shares) {
       const participant = byId.get(share.participantId);
       if (participant) {
-        participant.owed += sign * share.amount;
+        participant.owed +=
+          sign * (amount === expense.amount ? share.amount : amount);
       }
     }
   }
