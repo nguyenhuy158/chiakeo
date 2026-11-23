@@ -5,6 +5,7 @@ import { useAppSession } from "../adapters/react-query/session-query";
 import { BrandMark } from "../components/brand";
 import { ThemeToggle } from "../components/theme";
 import { LoadingState } from "../components/ui";
+import { Col, Container, Grid } from "../ui/Grid";
 
 /** Logo Google 4 mau; lucide khong co icon brand nen ve tay. */
 function GoogleMark() {
@@ -37,11 +38,18 @@ export function LoginPage() {
 
   if (isPending) {
     return (
-      <section className="mx-auto flex min-h-screen w-full max-w-md items-center px-5">
-        <div className="w-full">
-          <LoadingState />
-        </div>
-      </section>
+      <Container className="h-dvh py-4">
+        <Grid className="h-full min-h-0 items-center">
+          <Col
+            desktop={4}
+            className="max-h-full min-h-0 overflow-y-auto md:col-start-5! md:col-end-9!"
+          >
+            <div className="w-full">
+              <LoadingState />
+            </div>
+          </Col>
+        </Grid>
+      </Container>
     );
   }
 
@@ -59,43 +67,50 @@ export function LoginPage() {
   }
 
   return (
-    <section className="mx-auto flex min-h-screen w-full max-w-md items-center px-5">
-      <div className="w-full rounded-lg border border-border bg-surface p-6 shadow-sm">
-        <div className="mb-6 flex items-start justify-between gap-3">
-          <div>
-            {/* Logo thay cho wordmark "Chia keo". Ten app van con trong
+    <Container className="h-dvh py-4">
+      <Grid className="h-full min-h-0 items-center">
+        <Col
+          desktop={4}
+          className="max-h-full min-h-0 overflow-y-auto md:col-start-5! md:col-end-9!"
+        >
+          <div className="w-full rounded-lg border border-border bg-surface p-6 shadow-sm">
+            <div className="mb-6 flex items-start justify-between gap-3">
+              <div>
+                {/* Logo thay cho wordmark "Chia keo". Ten app van con trong
                 aria-label cua BrandMark nen screen reader khong mat gi. */}
-            <BrandMark size={64} className="mb-4" />
-            <h1 className="text-2xl font-semibold text-stone-950 dark:text-stone-50">
-              Đăng nhập
-            </h1>
-            <p className="mt-2 text-sm text-stone-600 dark:text-stone-400">
-              Đăng nhập bằng tài khoản Google.
+                <BrandMark size={64} className="mb-4" />
+                <h1 className="text-2xl font-semibold text-stone-950 dark:text-stone-50">
+                  Đăng nhập
+                </h1>
+                <p className="mt-2 text-sm text-stone-600 dark:text-stone-400">
+                  Đăng nhập bằng tài khoản Google.
+                </p>
+              </div>
+              <ThemeToggle />
+            </div>
+
+            <button
+              type="button"
+              onClick={handleGoogleSignIn}
+              disabled={googlePending}
+              className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-md border border-stone-300 bg-white px-4 text-sm font-semibold text-stone-800 transition hover:bg-stone-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-100 dark:hover:bg-stone-700"
+            >
+              <GoogleMark />
+              {googlePending ? "Đang chuyển..." : "Tiếp tục với Google"}
+            </button>
+
+            <p className="mt-4 text-center text-sm text-fg-muted">
+              Chưa biết dùng?{" "}
+              <Link
+                to="/help"
+                className="font-medium text-violet-700 underline-offset-4 hover:underline dark:text-violet-300"
+              >
+                Xem hướng dẫn
+              </Link>
             </p>
           </div>
-          <ThemeToggle />
-        </div>
-
-        <button
-          type="button"
-          onClick={handleGoogleSignIn}
-          disabled={googlePending}
-          className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-md border border-stone-300 bg-white px-4 text-sm font-semibold text-stone-800 transition hover:bg-stone-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-100 dark:hover:bg-stone-700"
-        >
-          <GoogleMark />
-          {googlePending ? "Đang chuyển..." : "Tiếp tục với Google"}
-        </button>
-
-        <p className="mt-4 text-center text-sm text-fg-muted">
-          Chưa biết dùng?{" "}
-          <Link
-            to="/help"
-            className="font-medium text-violet-700 underline-offset-4 hover:underline dark:text-violet-300"
-          >
-            Xem hướng dẫn
-          </Link>
-        </p>
-      </div>
-    </section>
+        </Col>
+      </Grid>
+    </Container>
   );
 }
