@@ -10,7 +10,10 @@ export function HelpPage() {
   return (
     <Container className="h-dvh py-4">
       <Grid className="h-full min-h-0">
-        <Col desktop={8} className="flex min-h-0 flex-col gap-4 md:col-start-3!">
+        <Col
+          desktop={8}
+          className="flex min-h-0 flex-col gap-4 md:col-start-3! md:col-end-11!"
+        >
           <div className="flex shrink-0 flex-wrap items-center gap-3">
             <Link
               to="/"
