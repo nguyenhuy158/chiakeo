@@ -20,6 +20,7 @@ import { GamesSidebar } from "../components/GamesSidebar";
 import { MobileShellContext } from "../components/mobile-shell";
 import { ThemeToggle } from "../components/theme";
 import { LoadingState } from "../components/ui";
+import { Col, Container, Grid } from "../ui/Grid";
 import { Menu as DropdownMenu } from "../ui/Menu";
 import { Sheet } from "../ui/Sheet";
 
@@ -31,7 +32,7 @@ import { Sheet } from "../ui/Sheet";
 const APP_FRAME_CLASS =
   "flex min-h-dvh flex-col has-[[data-one-screen]]:h-dvh has-[[data-one-screen]]:overflow-hidden";
 const MAIN_CLASS =
-  "mx-auto grid min-h-0 w-full max-w-7xl flex-1 gap-5 px-4 py-4 sm:px-5 sm:py-5 lg:grid-cols-[320px_minmax(0,1fr)] has-[[data-one-screen]]:grid-rows-[minmax(0,1fr)] has-[[data-one-screen]]:py-2";
+  "flex min-h-0 flex-1 flex-col py-4 sm:py-6 has-[[data-one-screen]]:py-2";
 
 export function AppLayout() {
   const navigate = useNavigate();
@@ -41,9 +42,9 @@ export function AppLayout() {
 
   if (isPending) {
     return (
-      <div className="mx-auto w-full max-w-7xl px-5 py-10">
+      <Container className="py-8">
         <LoadingState />
-      </div>
+      </Container>
     );
   }
 
@@ -80,7 +81,7 @@ export function AppLayout() {
     >
       <div className={APP_FRAME_CLASS}>
         <header className="sticky top-0 z-30 shrink-0 border-b border-border bg-surface">
-          <div className="mx-auto flex max-w-7xl items-center justify-between gap-2 px-4 py-3 sm:gap-3 sm:px-5 sm:py-4">
+          <Container className="flex items-center justify-between gap-2 py-3 sm:gap-3 sm:py-4">
             <div className="flex min-w-0 items-center gap-2">
               <button
                 type="button"
@@ -234,18 +235,25 @@ export function AppLayout() {
                 <span className="hidden sm:inline">Thoát</span>
               </button>
             </div>
-          </div>
+          </Container>
         </header>
 
-        <main className={MAIN_CLASS}>
-          <div className="hidden min-h-0 overflow-y-auto overscroll-contain lg:block">
-            <GamesSidebar />
-          </div>
-          {/* min-w-0: cot grid mac dinh no theo min-content, mot chuoi dai khong
+        <main className="flex min-h-0 flex-1">
+          <Container className={MAIN_CLASS}>
+            <Grid className="min-h-0 flex-1 has-[[data-one-screen]]:grid-rows-[minmax(0,1fr)]">
+              <Col
+                desktop={3}
+                className="hidden min-h-0 overflow-y-auto overscroll-contain lg:block"
+              >
+                <GamesSidebar />
+              </Col>
+              {/* min-w-0: cot grid mac dinh no theo min-content, mot chuoi dai khong
             ngat duoc (token, lenh CLI) se keo ca trang rong ra neu khong chan. */}
-          <section className="min-h-0 min-w-0">
-            <Outlet />
-          </section>
+              <Col className="min-h-0 min-w-0 lg:col-span-9!">
+                <Outlet />
+              </Col>
+            </Grid>
+          </Container>
         </main>
       </div>
 
