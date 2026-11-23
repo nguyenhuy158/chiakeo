@@ -103,6 +103,15 @@ const settingsRoute = createRoute({
   ),
 });
 
+const contactsRoute = createRoute({
+  getParentRoute: () => appRoute,
+  path: "/contacts",
+  component: lazyRouteComponent(
+    () => import("./routes/ContactsPage"),
+    "ContactsPage",
+  ),
+});
+
 const deviceLoginRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/login/device",
@@ -157,6 +166,7 @@ const routeTree = rootRoute.addChildren([
     homeRoute,
     gameRoute,
     settingsRoute,
+    contactsRoute,
     shuttlesRoute,
     funStatsRoute,
     bundlesRoute,
