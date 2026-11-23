@@ -14,6 +14,7 @@ import {
 } from "../adapters/react-query/queries";
 import { ArchivedGamesCard } from "./ArchivedGamesCard";
 import { ClosedGamesCard } from "./ClosedGamesCard";
+import { CollectionRibbon } from "./CollectionRibbon";
 import { TrashCard } from "./TrashCard";
 import { SkeletonCard } from "./ui";
 import { usePersistentOpen } from "./use-persistent-open";
@@ -176,6 +177,7 @@ export function GamesSidebar({ onNavigate }: { onNavigate?: () => void }) {
                     "border-violet-600 bg-violet-50 dark:border-violet-500 dark:bg-violet-500/15",
                 }}
               >
+                {isCollectionDone(game) && <CollectionRibbon />}
                 <span className="block text-sm font-semibold text-stone-950 dark:text-stone-50">
                   {game.name}
                 </span>

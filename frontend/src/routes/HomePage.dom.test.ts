@@ -138,6 +138,15 @@ describe("HomePage", () => {
     expect(host.textContent).toContain("Cầu 2");
   });
 
+  it("shows the collected ribbon only on fully paid games", () => {
+    state.games = [
+      { ...game("1"), paidProgress: { paid: 2, total: 2 } },
+      game("2"),
+    ];
+    render();
+    expect(host.textContent?.match(/Đã thu đủ/g)).toHaveLength(1);
+  });
+
   it.each([
     [2, "Khuya rồi"],
     [9, "Chào buổi sáng"],
