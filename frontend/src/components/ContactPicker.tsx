@@ -65,10 +65,18 @@ export function ContactPicker({
     [contacts, alreadyIn],
   );
 
-  if (contactsQuery.isPending || contacts.length === 0) {
+  if (
+    contactsQuery.isPending ||
+    contactsQuery.isError ||
+    contacts.length === 0
+  ) {
     return standalone ? (
       <p className="py-4 text-center text-sm text-fg-muted">
-        Chưa có người quen. Hãy tạo người mới.
+        {contactsQuery.isPending
+          ? "Đang tải người quen…"
+          : contactsQuery.isError
+            ? "Không tải được người quen. Quay lại và thử lần nữa."
+            : "Chưa có người quen. Hãy tạo người mới."}
       </p>
     ) : null;
   }

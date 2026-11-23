@@ -21,6 +21,7 @@ import { z } from "zod";
 import type { ApiParticipant } from "../../../shared/api-types";
 import type { ParticipantInput } from "../../../shared/schemas";
 import { getVietQrBankLabel } from "../adapters/browser/vietqr";
+import { Button } from "../ui/Button";
 import { PagedList } from "../ui/PagedList";
 import { SwipeAction } from "../ui/SwipeAction";
 import { AdaptiveSheet } from "./AdaptiveSheet";
@@ -48,7 +49,10 @@ const emptyForm: ParticipantFormValues = {
 
 const COMPACT_ROW_HEIGHT_PX = 60;
 
-type AddMode = "contacts" | "new";
+const ADD_MODE = { contacts: "contacts", new: "new" } as const;
+const ADD_CHOICE_ICON_SIZE = 20;
+const ADD_BACK_ICON_SIZE = 16;
+type AddMode = (typeof ADD_MODE)[keyof typeof ADD_MODE];
 
 type ParticipantPanelProps = {
   participants: ApiParticipant[];
@@ -86,8 +90,8 @@ export function ParticipantPanel({
   const bankVisible = Boolean(editingParticipantId) || showBank;
   const splitAdd = compact && !editingParticipantId;
   const showContacts =
-    !editingParticipantId && (!splitAdd || addMode === "contacts");
-  const showNewForm = !splitAdd || addMode === "new";
+    !editingParticipantId && (!splitAdd || addMode === ADD_MODE.contacts);
+  const showNewForm = !splitAdd || addMode === ADD_MODE.new;
   const form = useForm<ParticipantFormValues>({
     resolver: zodResolver(participantFormSchema),
     defaultValues: emptyForm,
@@ -166,33 +170,41 @@ export function ParticipantPanel({
     <>
       {splitAdd && addMode === null && (
         <div className="grid gap-3 pb-2">
-          <button
-            type="button"
-            onClick={() => setAddMode("contacts")}
-            className="flex min-h-16 w-full items-center gap-3 rounded-md border border-border bg-surface px-4 text-left text-sm font-semibold text-fg transition hover:bg-surface-muted active:scale-[0.99]"
+          <Button
+            variant="outline"
+            block
+            onClick={() => setAddMode(ADD_MODE.contacts)}
+            className="h-auto min-h-16 justify-start gap-3 px-4 py-3 text-left font-semibold"
           >
-            <BookUser size={20} className="shrink-0 text-violet-600" />
+            <BookUser
+              size={ADD_CHOICE_ICON_SIZE}
+              className="shrink-0 text-primary"
+            />
             Chọn từ người quen
-          </button>
-          <button
-            type="button"
-            onClick={() => setAddMode("new")}
-            className="flex min-h-16 w-full items-center gap-3 rounded-md border border-border bg-surface px-4 text-left text-sm font-semibold text-fg transition hover:bg-surface-muted active:scale-[0.99]"
+          </Button>
+          <Button
+            variant="outline"
+            block
+            onClick={() => setAddMode(ADD_MODE.new)}
+            className="h-auto min-h-16 justify-start gap-3 px-4 py-3 text-left font-semibold"
           >
-            <UserPlus size={20} className="shrink-0 text-violet-600" />
+            <UserPlus
+              size={ADD_CHOICE_ICON_SIZE}
+              className="shrink-0 text-primary"
+            />
             Tạo người mới
-          </button>
+          </Button>
         </div>
       )}
       {splitAdd && addMode !== null && (
-        <button
-          type="button"
+        <Button
+          variant="ghost"
           onClick={() => setAddMode(null)}
-          className="mb-3 inline-flex min-h-11 items-center gap-2 text-sm font-medium text-violet-700 dark:text-violet-300"
+          className="mb-3 text-primary"
         >
-          <ArrowLeft size={16} />
+          <ArrowLeft size={ADD_BACK_ICON_SIZE} />
           Quay lại
-        </button>
+        </Button>
       )}
       {showContacts && (
         <ContactPicker

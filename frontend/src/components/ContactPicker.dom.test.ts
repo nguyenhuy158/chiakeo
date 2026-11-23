@@ -6,11 +6,19 @@ import type { Contact } from "../../../shared/contacts";
 import type { ParticipantInput } from "../../../shared/schemas";
 
 const { state } = vi.hoisted(() => ({
-  state: { contacts: undefined as Contact[] | undefined, loading: false },
+  state: {
+    contacts: undefined as Contact[] | undefined,
+    loading: false,
+    failed: false,
+  },
 }));
 
 vi.mock("../adapters/react-query/queries", () => ({
-  useContacts: () => ({ data: state.contacts, isPending: state.loading }),
+  useContacts: () => ({
+    data: state.contacts,
+    isPending: state.loading,
+    isError: state.failed,
+  }),
 }));
 
 import { ContactPicker } from "./ContactPicker";
@@ -64,6 +72,7 @@ beforeEach(() => {
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
   state.contacts = undefined;
   state.loading = false;
+  state.failed = false;
   onAddMany = vi.fn(async (_people: ParticipantInput[]) => undefined);
   host = document.createElement("div");
   document.body.append(host);
@@ -89,6 +98,16 @@ describe("ContactPicker", () => {
   });
 
   it("tells a standalone picker with no contacts to create a new person", () => {
+    state.loading = true;
+    render([], false, true);
+    expect(host.textContent).toContain("Đang tải người quen");
+    expect(host.textContent).not.toContain("Chưa có người quen");
+    state.loading = false;
+    state.failed = true;
+    render([], false, true);
+    expect(host.textContent).toContain("Không tải được người quen");
+    expect(host.textContent).not.toContain("Chưa có người quen");
+    state.failed = false;
     state.contacts = [];
     render([], false, true);
     expect(host.textContent).toContain("Chưa có người quen");
