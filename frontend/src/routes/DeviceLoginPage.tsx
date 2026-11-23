@@ -16,6 +16,7 @@ import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
 import { CodeInput } from "../ui/CodeInput";
 import { Field } from "../ui/Field";
+import { Col, Container, Grid } from "../ui/Grid";
 
 const ERROR_MESSAGE: Record<string, string> = {
   not_found:
@@ -30,15 +31,22 @@ const CODE_HINT = "Nhập đủ 8 ký tự để bật nút Tiếp tục.";
 
 function Frame({ children }: { children: React.ReactNode }) {
   return (
-    <section className="mx-auto flex min-h-dvh w-full max-w-md items-center px-5">
-      <Card className="w-full p-6">
-        <div className="mb-6 flex items-start justify-between gap-3">
-          <BrandMark size={56} />
-          <ThemeToggle />
-        </div>
-        {children}
-      </Card>
-    </section>
+    <Container className="h-dvh py-4">
+      <Grid className="h-full min-h-0 items-center">
+        <Col
+          desktop={4}
+          className="max-h-full min-h-0 overflow-y-auto md:col-start-5! md:col-end-9!"
+        >
+          <Card className="w-full p-6">
+            <div className="mb-6 flex items-start justify-between gap-3">
+              <BrandMark size={56} />
+              <ThemeToggle />
+            </div>
+            {children}
+          </Card>
+        </Col>
+      </Grid>
+    </Container>
   );
 }
 
@@ -57,11 +65,18 @@ export function DeviceLoginPage() {
 
   if (isPending) {
     return (
-      <section className="mx-auto flex min-h-dvh w-full max-w-md items-center px-5">
-        <div className="w-full">
-          <LoadingState />
-        </div>
-      </section>
+      <Container className="h-dvh py-4">
+        <Grid className="h-full min-h-0 items-center">
+          <Col
+            desktop={4}
+            className="max-h-full min-h-0 overflow-y-auto md:col-start-5! md:col-end-9!"
+          >
+            <div className="w-full">
+              <LoadingState />
+            </div>
+          </Col>
+        </Grid>
+      </Container>
     );
   }
 
