@@ -698,7 +698,7 @@ try {
   // 7.9 Token MCP: tao tu trang cai dat, dung that, roi thu hoi
   await page.click('a[aria-label="Cài đặt"]');
   await page.waitForURL("**/settings", WAIT);
-  await goTab(page, "MCP");
+  await page.getByRole("tab", { name: "MCP", exact: true }).click();
   await page.waitForSelector("text=Chưa có token nào", WAIT);
   // Bo tick "Đọc bản tổng kết" (mac dinh co) de kiem tra scope duoc ton trong.
   await page.click("text=Đọc bản tổng kết");
