@@ -33,6 +33,22 @@ describe("SettingsPage", () => {
     expect(host.textContent).toContain("Tag panel");
     expect(host.textContent).toContain("MCP token panel");
     expect(host.textContent).toContain("Game settings panel");
+    const panels = [...host.querySelectorAll<HTMLElement>('[role="tabpanel"]')];
+    const tabs = [...host.querySelectorAll<HTMLButtonElement>('[role="tab"]')];
+    expect(panels.map((panel) => panel.hidden)).toEqual([
+      false,
+      true,
+      true,
+      true,
+    ]);
+    for (const [index, tab] of tabs.entries()) {
+      act(() => tab.click());
+      expect(panels.map((panel) => panel.hidden)).toEqual(
+        panels.map((_panel, panelIndex) => panelIndex !== index),
+      );
+      expect([...host.querySelectorAll('[role="tabpanel"]')]).toEqual(panels);
+      expect(tab.getAttribute("aria-selected")).toBe("true");
+    }
     act(() => root.unmount());
     host.remove();
   });
