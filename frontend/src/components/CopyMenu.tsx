@@ -27,6 +27,7 @@ import {
   buildSummaryText,
   type SummaryTextInput,
   type SummaryVariant,
+  ULTRA_COMPACT_VARIANT,
 } from "../../../shared/summary-text";
 import {
   copyImage,
@@ -176,8 +177,8 @@ export function CopyMenu({
     };
   }, [open]);
 
-  async function copySummaryText() {
-    const ok = await copyText(buildSummaryText(input));
+  async function copySummaryText(variant: SummaryVariant = "compact") {
+    const ok = await copyText(buildSummaryText(input, variant));
     (ok ? toast.success : toast.error)(
       ok ? "Đã sao chép tổng kết" : "Không sao chép được tổng kết",
     );
@@ -279,7 +280,7 @@ export function CopyMenu({
       label: "Copy tổng kết",
       hint: "Dạng chữ, dán vào Zalo/Messenger",
       icon: ListChecks,
-      run: copySummaryText,
+      run: () => copySummaryText(),
     },
     {
       id: "text-detailed",
@@ -301,6 +302,20 @@ export function CopyMenu({
       hint: "Ảnh PNG, ghi rõ ai đã ứng",
       icon: Images,
       run: () => copySummaryImage("detailed"),
+    },
+    {
+      id: ULTRA_COMPACT_VARIANT,
+      label: "Copy tổng kết siêu gọn",
+      hint: "Mỗi người một dòng tổng tiền",
+      icon: ListChecks,
+      run: () => copySummaryText(ULTRA_COMPACT_VARIANT),
+    },
+    {
+      id: `image-${ULTRA_COMPACT_VARIANT}`,
+      label: "Copy ảnh siêu gọn",
+      hint: "Ảnh PNG không liệt kê từng khoản chi",
+      icon: ImageIcon,
+      run: () => copySummaryImage(ULTRA_COMPACT_VARIANT),
     },
     {
       id: "toggle-qr",

@@ -116,6 +116,9 @@ describe("summary PNG rendering", () => {
     expect(imageSources).toEqual([]);
     expect(toBlob).toHaveBeenCalledWith(expect.any(Function), "image/png");
     expect(buildSummaryImageFileName(input)).toBe("chia-keo-K123.png");
+    expect(buildSummaryImageFileName(input, "ultra-compact")).toBe(
+      "chia-keo-K123-sieu-gon.png",
+    );
     expect(buildSummaryImageFileName(input, "detailed")).toBe(
       "chia-keo-K123-chi-tiet.png",
     );

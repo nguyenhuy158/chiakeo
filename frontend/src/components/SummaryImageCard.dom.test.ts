@@ -32,6 +32,7 @@ const {
 }));
 
 vi.mock("../../../shared/summary-text", () => ({
+  ULTRA_COMPACT_VARIANT: "ultra-compact",
   buildSummaryText: (_input: unknown, variant: string) => `summary ${variant}`,
 }));
 vi.mock("../adapters/browser/clipboard", () => ({
@@ -187,6 +188,21 @@ afterEach(() => {
 });
 
 describe("SummaryImageCard", () => {
+  it("renders and copies the selected ultra compact variant", async () => {
+    render();
+    await vi.waitFor(() => expect(button("Copy ảnh").disabled).toBe(false));
+    await act(async () => button("Siêu gọn").click());
+    expect(renderSummaryImage).toHaveBeenLastCalledWith(
+      expect.anything(),
+      "ultra-compact",
+      "plain",
+      true,
+      true,
+    );
+    act(() => button("Chữ").click());
+    await act(async () => button("Copy chữ").click());
+    expect(copyText).toHaveBeenCalledWith("summary ultra-compact");
+  });
   it("collapses the preview when collapsible and expands on demand", () => {
     window.localStorage.clear();
     act(() =>

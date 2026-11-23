@@ -124,6 +124,37 @@ describe("buildSummaryText excluded", () => {
 });
 
 describe("buildSummaryText", () => {
+  it("keeps totals and transfers while shortening large summaries", () => {
+    const fullInput = {
+      ...input,
+      settlementMode: "host" as const,
+      shareUrl: SHARE_URL,
+    };
+    const compact = buildSummaryDocument(fullInput);
+    const ultra = buildSummaryDocument(fullInput, "ultra-compact");
+    expect(ultra.sections[0]).toEqual({
+      id: "expenses",
+      heading: "CÁC KHOẢN CHI (3 khoản · tổng 412k)",
+      lines: [],
+    });
+    expect(ultra.sections[1].lines).toEqual([
+      "- Thu: phải chịu 155,2k · đã trả 107k",
+      "- Hồng: phải chịu 155,2k · đã trả 0k",
+      "- Nam: phải chịu 101,7k · đã trả 305k",
+    ]);
+    expect(ultra.sections[2]).toEqual(compact.sections[2]);
+    expect(ultra.footer).toEqual(compact.footer);
+    const empty = buildSummaryText(
+      {
+        ...input,
+        expenses: [],
+        summary: { totalExpense: 0, balances: [], settlements: [] },
+      },
+      "ultra-compact",
+    );
+    expect(empty).toContain("Chưa có khoản chi nào.");
+    expect(empty).toContain("- Thu: phải chịu 0k · đã trả 0k");
+  });
   it("handles empty splits, unknown people and zero balances", () => {
     const zero = makeExpense("zero", "Trống", 0, "missing", []);
     const base = {
