@@ -37,10 +37,19 @@ function participant(name: string): ApiParticipant {
   return { id: name, name, bankId: "", accountNo: "", accountName: "" };
 }
 
-function render(participants: ApiParticipant[] = [], pending = false) {
+function render(
+  participants: ApiParticipant[] = [],
+  pending = false,
+  standalone = false,
+) {
   act(() =>
     root.render(
-      createElement(ContactPicker, { participants, pending, onAddMany }),
+      createElement(ContactPicker, {
+        participants,
+        pending,
+        onAddMany,
+        standalone,
+      }),
     ),
   );
 }
@@ -77,6 +86,17 @@ describe("ContactPicker", () => {
     state.contacts = [];
     render();
     expect(host.textContent).toBe("");
+  });
+
+  it("tells a standalone picker with no contacts to create a new person", () => {
+    state.contacts = [];
+    render([], false, true);
+    expect(host.textContent).toContain("Chưa có người quen");
+    state.contacts = [contact("An")];
+    render([], false, true);
+    expect(host.querySelector("div")?.className).not.toContain("mb-4");
+    render();
+    expect(host.querySelector("div")?.className).toContain("mb-4");
   });
 
   it("sorts existing people last and selects only new contacts", async () => {

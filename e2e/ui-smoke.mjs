@@ -48,6 +48,7 @@ const goTab = (target, name) =>
 async function addPerson(target, gameId, name, bank) {
   await goTab(target, "Người");
   await target.getByRole("button", { name: "Mở form thêm người" }).click();
+  await target.getByRole("button", { name: "Tạo người mới" }).click();
   await target.fill("input[placeholder='Huy']:visible", name);
   if (bank) {
     await target.click('button:has-text("Tài khoản nhận tiền"):visible');
@@ -1365,6 +1366,7 @@ try {
     .waitFor({ state: "visible", ...WAIT });
   assert.equal(await scrolls(), false, "tab Nguoi cuon duoc tren dien thoai");
   await page.getByRole("button", { name: "Mở form thêm người" }).click();
+  await page.getByRole("button", { name: "Tạo người mới" }).click();
   await page.fill("input[placeholder='Huy']:visible", "Phone Guest");
   await page.click("button[type='submit']:visible");
   await page.waitForFunction(
