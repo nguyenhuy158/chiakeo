@@ -71,8 +71,8 @@ import { invalidInput, readJson, respond } from "../lib/http";
 import { createPaymentContext } from "../lib/payment-context";
 import { type AuthedEnv, protectPaths } from "../lib/require-user";
 
-const participantUpdateSchema = participantInputSchema.partial();
-const expenseUpdateSchema = expenseInputSchema
+export const participantUpdateSchema = participantInputSchema.partial();
+export const expenseUpdateSchema = expenseInputSchema
   .extend({
     kind: expenseInputSchema.shape.kind.removeDefault(),
     category: expenseInputSchema.shape.category.removeDefault(),

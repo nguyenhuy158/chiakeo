@@ -12,12 +12,12 @@ const AI_TEXT_MAX_LENGTH = 500;
 // Base64 cua anh ~6MB; du cho anh hoa don chup dien thoai da resize.
 const AI_IMAGE_DATA_MAX_LENGTH = 8_000_000;
 
-const aiExpenseInputSchema = z.object({
+export const aiExpenseInputSchema = z.object({
   gameId: z.string().min(1),
   text: z.string().trim().min(1).max(AI_TEXT_MAX_LENGTH),
 });
 
-const aiReceiptInputSchema = z.object({
+export const aiReceiptInputSchema = z.object({
   gameId: z.string().min(1),
   image: z.object({
     mimeType: z.enum(["image/jpeg", "image/png", "image/webp"]),

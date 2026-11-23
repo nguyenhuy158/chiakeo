@@ -437,3 +437,5 @@ Chia Kèo previously used the shared D1 database `db` with `chiakeo_` table and 
 Legacy tables and their data are preserved under the same prefix. The old migration ledger is retained as `chiakeo_legacy_migrations`, separate from the active ledger. Better Auth logical schema keys remain unchanged.
 
 `scripts/d1-shared-migration.py prepare SOURCE.sql OUTPUT_DIR` restores a source export, renames SQLite schema objects, produces a data-only import and checks every row hash and foreign key against a local restore. `verify MANIFEST.json TARGET.sql` compares a target export with that manifest. Treat SQL exports as secrets and keep encrypted backups outside this repository.
+
+API contract: [OpenAPI spec and CI checks](docs/openapi.md).

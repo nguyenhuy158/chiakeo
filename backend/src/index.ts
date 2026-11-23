@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
+import openapi from "../../docs/openapi.json";
 import { BUILD_INFO } from "../../shared/build-info";
 import { createDb } from "./adapters/d1/game-repository";
 import { AUTH_BASE_PATH, createAuth, getTrustedOrigins } from "./auth";
@@ -41,6 +42,7 @@ const PAYMENT_CREATE_RATE_LIMIT = { limit: 10, windowMs: 60_000 };
 // Share token ngan (4 ky tu) nen phai chan brute-force doan token qua GET.
 const SHARE_VIEW_RATE_LIMIT = { limit: 20, windowMs: 60_000 };
 const PAYMENT_STATUS_RATE_LIMIT = { limit: 60, windowMs: 60_000 };
+const OPENAPI_PATH = "/api/openapi.json";
 const PAYMENT_STATUS_PATH = /\/payments\/[^/]+$/;
 
 const app = new Hono<{ Bindings: Env }>();
@@ -57,6 +59,8 @@ app.use("/api/*", (c, next) => {
     maxAge: 600,
   })(c, next);
 });
+
+app.get(OPENAPI_PATH, (c) => c.json(openapi));
 
 // Code dang chay tren server nay, de kiem nhanh xem deploy da len chua.
 app.get("/api/version", (c) => c.json(BUILD_INFO));
