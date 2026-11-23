@@ -16,6 +16,7 @@ import {
 import { useConfirm } from "../components/ConfirmDialog";
 import { formatDateTime } from "../components/format-datetime";
 import { EmptyState, LoadingState, SkeletonListRow } from "../components/ui";
+import { Col, Grid } from "../ui/Grid";
 import { PagedList } from "../ui/PagedList";
 
 const COMPACT_ROW_HEIGHT_PX = 56;
@@ -169,133 +170,141 @@ export function ShuttlesPage() {
         </h1>
       </div>
 
-      <section className="shrink-0 rounded-lg border border-border bg-surface p-3 shadow-sm">
-        {stockQuery.isPending ? (
-          <LoadingState label="Đang đếm cầu..." />
-        ) : (
-          <>
-            <p className="text-center text-sm text-fg-muted">Trong ống còn</p>
-            <p
-              aria-live="polite"
-              className="text-center text-6xl font-extrabold tabular-nums text-stone-950 dark:text-stone-50"
-            >
-              {stock}
-            </p>
-            <p className="text-center text-sm text-fg-muted">trái cầu</p>
-
-            <div className="mt-4 grid grid-cols-2 gap-3">
-              <div>
-                <p className="mb-1.5 text-xs font-medium text-fg-muted">
-                  Đã dùng
-                </p>
-                <div className="grid grid-cols-4 gap-1.5">
-                  {USE_STEPS.map((step) => (
-                    <button
-                      key={step}
-                      type="button"
-                      onClick={() => submit("use", step)}
-                      disabled={pending || step > stock}
-                      aria-label={`Dùng ${step} trái`}
-                      className="inline-flex h-11 items-center justify-center gap-0.5 rounded-md bg-rose-600 text-sm font-semibold text-white transition hover:bg-rose-700 active:bg-rose-800 disabled:opacity-40"
-                    >
-                      <Minus size={13} />
-                      {step}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <p className="mb-1.5 text-xs font-medium text-fg-muted">
-                  Mua thêm
-                </p>
-                <div className="grid grid-cols-4 gap-1.5">
-                  {ADD_STEPS.map((step) => (
-                    <button
-                      key={step}
-                      type="button"
-                      onClick={() => submit("add", step)}
-                      disabled={pending}
-                      aria-label={`Thêm ${step} trái`}
-                      className="inline-flex h-11 items-center justify-center gap-0.5 rounded-md bg-emerald-600 text-sm font-semibold text-white transition hover:bg-emerald-700 active:bg-emerald-800 disabled:opacity-40"
-                    >
-                      <Plus size={13} />
-                      {step}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            <form
-              onSubmit={(event) => {
-                event.preventDefault();
-                handleSetExact();
-              }}
-              className="mt-3 flex items-center gap-2"
-            >
-              <input
-                value={countDraft}
-                onChange={(event) =>
-                  setCountDraft(event.target.value.replace(/\D/g, ""))
-                }
-                inputMode="numeric"
-                placeholder="Đếm lại · vd 8"
-                aria-label="Chốt lại số cầu đang có"
-                className="field w-32"
-              />
-              <button
-                type="submit"
-                disabled={pending || countDraft === ""}
-                className="inline-flex h-11 items-center gap-1.5 rounded-md border border-stone-300 bg-surface px-3 text-sm font-medium text-stone-700 transition hover:bg-surface-muted disabled:opacity-50 dark:border-stone-700 dark:text-stone-200"
+      <Grid className="min-h-0 flex-1 grid-rows-[auto_minmax(0,1fr)] md:grid-rows-[minmax(0,1fr)]">
+        <Col
+          desktop={6}
+          className="min-h-0 overflow-y-auto rounded-lg border border-border bg-surface p-3 shadow-sm"
+        >
+          {stockQuery.isPending ? (
+            <LoadingState label="Đang đếm cầu..." />
+          ) : (
+            <>
+              <p className="text-center text-sm text-fg-muted">Trong ống còn</p>
+              <p
+                aria-live="polite"
+                className="text-center text-6xl font-extrabold tabular-nums text-stone-950 dark:text-stone-50"
               >
-                <Check size={15} />
-                Chốt lại
-              </button>
-            </form>
+                {stock}
+              </p>
+              <p className="text-center text-sm text-fg-muted">trái cầu</p>
 
-            <input
-              value={note}
-              onChange={(event) => setNote(event.target.value)}
-              maxLength={SHUTTLE_NOTE_MAX_LENGTH}
-              placeholder="Ghi chú cho lần ghi tới (không bắt buộc)"
-              aria-label="Ghi chú"
-              className="field mt-2"
-            />
-          </>
-        )}
-      </section>
+              <div className="mt-4 grid grid-cols-2 gap-3">
+                <div>
+                  <p className="mb-1.5 text-xs font-medium text-fg-muted">
+                    Đã dùng
+                  </p>
+                  <div className="grid grid-cols-4 gap-1.5">
+                    {USE_STEPS.map((step) => (
+                      <button
+                        key={step}
+                        type="button"
+                        onClick={() => submit("use", step)}
+                        disabled={pending || step > stock}
+                        aria-label={`Dùng ${step} trái`}
+                        className="inline-flex h-11 items-center justify-center gap-0.5 rounded-md bg-rose-600 text-sm font-semibold text-white transition hover:bg-rose-700 active:bg-rose-800 disabled:opacity-40"
+                      >
+                        <Minus size={13} />
+                        {step}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <p className="mb-1.5 text-xs font-medium text-fg-muted">
+                    Mua thêm
+                  </p>
+                  <div className="grid grid-cols-4 gap-1.5">
+                    {ADD_STEPS.map((step) => (
+                      <button
+                        key={step}
+                        type="button"
+                        onClick={() => submit("add", step)}
+                        disabled={pending}
+                        aria-label={`Thêm ${step} trái`}
+                        className="inline-flex h-11 items-center justify-center gap-0.5 rounded-md bg-emerald-600 text-sm font-semibold text-white transition hover:bg-emerald-700 active:bg-emerald-800 disabled:opacity-40"
+                      >
+                        <Plus size={13} />
+                        {step}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
 
-      <section className="flex min-h-0 flex-1 flex-col rounded-lg border border-border bg-surface p-3 shadow-sm">
-        <h2 className="shrink-0 text-sm font-semibold text-stone-950 dark:text-stone-50">
-          Lịch sử
-        </h2>
-        {stockQuery.isPending ? (
-          <div className="divide-y divide-stone-100 dark:divide-stone-800">
-            <SkeletonListRow />
-            <SkeletonListRow />
-            <SkeletonListRow />
-          </div>
-        ) : entries.length === 0 ? (
-          <p className="mt-2 text-sm text-fg-muted">
-            Chưa ghi gì. Bấm "Chốt lại" để nhập số cầu đang có trong ống.
-          </p>
-        ) : (
-          <div className="mt-2 min-h-0 flex-1">
-            <PagedList
-              items={entries}
-              getKey={(entry) => entry.id}
-              rowHeight={COMPACT_ROW_HEIGHT_PX}
-              renderItem={(entry) => (
-                <EntryRow
-                  entry={entry}
-                  deleting={deleteEntry.isPending}
-                  onDelete={() => handleDelete(entry)}
+              <form
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  handleSetExact();
+                }}
+                className="mt-3 flex items-center gap-2"
+              >
+                <input
+                  value={countDraft}
+                  onChange={(event) =>
+                    setCountDraft(event.target.value.replace(/\D/g, ""))
+                  }
+                  inputMode="numeric"
+                  placeholder="Đếm lại · vd 8"
+                  aria-label="Chốt lại số cầu đang có"
+                  className="field w-32"
                 />
-              )}
-            />
-          </div>
-        )}
-      </section>
+                <button
+                  type="submit"
+                  disabled={pending || countDraft === ""}
+                  className="inline-flex h-11 items-center gap-1.5 rounded-md border border-stone-300 bg-surface px-3 text-sm font-medium text-stone-700 transition hover:bg-surface-muted disabled:opacity-50 dark:border-stone-700 dark:text-stone-200"
+                >
+                  <Check size={15} />
+                  Chốt lại
+                </button>
+              </form>
+
+              <input
+                value={note}
+                onChange={(event) => setNote(event.target.value)}
+                maxLength={SHUTTLE_NOTE_MAX_LENGTH}
+                placeholder="Ghi chú cho lần ghi tới (không bắt buộc)"
+                aria-label="Ghi chú"
+                className="field mt-2"
+              />
+            </>
+          )}
+        </Col>
+
+        <Col
+          desktop={6}
+          className="flex min-h-0 flex-col rounded-lg border border-border bg-surface p-3 shadow-sm"
+        >
+          <h2 className="shrink-0 text-sm font-semibold text-stone-950 dark:text-stone-50">
+            Lịch sử
+          </h2>
+          {stockQuery.isPending ? (
+            <div className="divide-y divide-stone-100 dark:divide-stone-800">
+              <SkeletonListRow />
+              <SkeletonListRow />
+              <SkeletonListRow />
+            </div>
+          ) : entries.length === 0 ? (
+            <p className="mt-2 text-sm text-fg-muted">
+              Chưa ghi gì. Bấm "Chốt lại" để nhập số cầu đang có trong ống.
+            </p>
+          ) : (
+            <div className="mt-2 min-h-0 flex-1">
+              <PagedList
+                items={entries}
+                getKey={(entry) => entry.id}
+                rowHeight={COMPACT_ROW_HEIGHT_PX}
+                renderItem={(entry) => (
+                  <EntryRow
+                    entry={entry}
+                    deleting={deleteEntry.isPending}
+                    onDelete={() => handleDelete(entry)}
+                  />
+                )}
+              />
+            </div>
+          )}
+        </Col>
+      </Grid>
     </div>
   );
 }
