@@ -141,6 +141,27 @@ describe("ContactBookCard", () => {
     expect(window.localStorage.getItem(OPEN_KEY)).toBe("0");
   });
 
+  it("stays open without a toggle when it has its own page", () => {
+    state.contacts = [
+      {
+        key: "a",
+        id: "a",
+        name: "An",
+        bankId: "",
+        accountNo: "",
+        accountName: "",
+        source: "book",
+      },
+    ] as Contact[];
+    act(() =>
+      root.render(createElement(ContactBookCard, { alwaysOpen: true })),
+    );
+    expect(host.textContent).toContain("An");
+    expect(button("Xem")).toBeUndefined();
+    expect(button("Ẩn")).toBeUndefined();
+    expect(button("Thêm vào danh bạ")).toBeDefined();
+  });
+
   it("shows loading, empty state, contact details, and pagination", () => {
     state.loading = true;
     render();

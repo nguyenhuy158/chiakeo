@@ -125,6 +125,7 @@ describe("AppLayout", () => {
     render();
     for (const [label, to] of [
       ["Kho cầu", "/shuttles"],
+      ["Danh bạ", "/contacts"],
       ["Cuộc chơi cha", "/bundles"],
       ["Thống kê vui", "/fun"],
       ["Cài đặt", "/settings"],
@@ -146,6 +147,7 @@ describe("AppLayout", () => {
     expect(host.querySelector('a[href="/settings"]')).not.toBeNull();
     expect(host.querySelector('a[href="/fun"]')).not.toBeNull();
     expect(host.querySelector('a[href="/shuttles"]')).not.toBeNull();
+    expect(host.querySelector('a[href="/contacts"]')).not.toBeNull();
     expect(
       host.querySelector('a[aria-label="Hướng dẫn sử dụng"]'),
     ).not.toBeNull();

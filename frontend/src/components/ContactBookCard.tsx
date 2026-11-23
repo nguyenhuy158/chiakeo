@@ -268,14 +268,19 @@ function ContactRow({
  * Card danh ba o sidebar: nhap san thong tin nguoi hay di cung (ten, so tai
  * khoan) de trong tung cuoc chia chi con tick chon ai tham gia.
  */
-export function ContactBookCard() {
+export function ContactBookCard({
+  alwaysOpen = false,
+}: {
+  alwaysOpen?: boolean;
+}) {
   const confirm = useConfirm();
   const contactsQuery = useContacts();
   const createContact = useCreateContact();
   const updateContact = useUpdateContact();
   const deleteContact = useDeleteContact();
 
-  const [open, setOpen] = usePersistentOpen("contact-book", false);
+  const [storedOpen, setOpen] = usePersistentOpen("contact-book", false);
+  const open = alwaysOpen || storedOpen;
   const [adding, setAdding] = useState(false);
   const [draft, setDraft] = useState<Draft>(EMPTY);
   const [editingKey, setEditingKey] = useState<string | null>(null);
@@ -389,14 +394,16 @@ export function ContactBookCard() {
               {adding ? <X size={15} /> : <Plus size={15} />}
             </button>
           )}
-          <button
-            type="button"
-            onClick={() => setOpen((current) => !current)}
-            aria-expanded={open}
-            className="rounded-md px-2 py-1 text-xs font-semibold text-violet-700 transition hover:bg-primary-soft dark:text-violet-300"
-          >
-            {open ? "Ẩn" : "Xem"}
-          </button>
+          {!alwaysOpen && (
+            <button
+              type="button"
+              onClick={() => setOpen((current) => !current)}
+              aria-expanded={open}
+              className="rounded-md px-2 py-1 text-xs font-semibold text-violet-700 transition hover:bg-primary-soft dark:text-violet-300"
+            >
+              {open ? "Ẩn" : "Xem"}
+            </button>
+          )}
         </div>
       </div>
 

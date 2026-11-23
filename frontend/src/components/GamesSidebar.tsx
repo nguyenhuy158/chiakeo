@@ -14,7 +14,6 @@ import {
 } from "../adapters/react-query/queries";
 import { ArchivedGamesCard } from "./ArchivedGamesCard";
 import { ClosedGamesCard } from "./ClosedGamesCard";
-import { ContactBookCard } from "./ContactBookCard";
 import { TrashCard } from "./TrashCard";
 import { SkeletonCard } from "./ui";
 import { usePersistentOpen } from "./use-persistent-open";
@@ -151,8 +150,6 @@ export function GamesSidebar({ onNavigate }: { onNavigate?: () => void }) {
           </form>
         )}
       </div>
-
-      <ContactBookCard />
 
       <section className="rounded-lg border border-border bg-surface p-3 shadow-sm">
         <div className="mb-2 flex items-center gap-2 px-1 text-sm font-semibold text-stone-800 dark:text-stone-200">

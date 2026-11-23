@@ -1,5 +1,6 @@
 import { Link, Navigate, Outlet, useNavigate } from "@tanstack/react-router";
 import {
+  BookUser,
   CircleHelp,
   Layers,
   LogOut,
@@ -123,6 +124,18 @@ export function AppLayout() {
                 <Volleyball size={18} />
               </Link>
               <Link
+                to="/contacts"
+                aria-label="Danh bạ"
+                title="Danh bạ"
+                className="hidden h-11 w-11 shrink-0 items-center justify-center rounded-md border border-stone-300 bg-white text-stone-700 transition hover:bg-stone-50 active:bg-stone-100 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-200 dark:hover:bg-stone-800 dark:active:bg-stone-700 sm:inline-flex"
+                activeProps={{
+                  className:
+                    "border-violet-600 bg-violet-50 text-violet-700 dark:border-violet-500 dark:bg-violet-500/15 dark:text-violet-300",
+                }}
+              >
+                <BookUser size={18} />
+              </Link>
+              <Link
                 to="/bundles"
                 aria-label="Cuộc chơi cha"
                 title="Cuộc chơi cha"
@@ -176,6 +189,11 @@ export function AppLayout() {
                     label: "Kho cầu",
                     icon: <Volleyball size={15} />,
                     onSelect: () => navigate({ to: "/shuttles" }),
+                  },
+                  {
+                    label: "Danh bạ",
+                    icon: <BookUser size={15} />,
+                    onSelect: () => navigate({ to: "/contacts" }),
                   },
                   {
                     label: "Cuộc chơi cha",
