@@ -5,6 +5,7 @@ import {
   type SummaryDocument,
   type SummaryTextInput,
   type SummaryVariant,
+  ULTRA_COMPACT_VARIANT,
 } from "../../../../shared/summary-text";
 import {
   buildVietQrProxyPath,
@@ -621,6 +622,11 @@ export function buildSummaryImageFileName(
   input: SummaryTextInput,
   variant: SummaryVariant = "compact",
 ) {
-  const suffix = variant === "detailed" ? "-chi-tiet" : "";
+  const suffix =
+    variant === ULTRA_COMPACT_VARIANT
+      ? "-sieu-gon"
+      : variant === "detailed"
+        ? "-chi-tiet"
+        : "";
   return `chia-keo-${input.code}${suffix}.png`;
 }

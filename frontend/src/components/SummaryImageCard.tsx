@@ -5,6 +5,7 @@ import {
   buildSummaryText,
   type SummaryTextInput,
   type SummaryVariant,
+  ULTRA_COMPACT_VARIANT,
 } from "../../../shared/summary-text";
 import {
   copyImage,
@@ -23,6 +24,11 @@ import { usePersistentOpen } from "./use-persistent-open";
 import { useSummaryImageBackground } from "./use-summary-image-background";
 
 const VARIANTS: { value: SummaryVariant; label: string; hint: string }[] = [
+  {
+    value: ULTRA_COMPACT_VARIANT,
+    label: "Siêu gọn",
+    hint: "Mỗi người một dòng tổng tiền",
+  },
   { value: "compact", label: "Gọn", hint: "Bản ngắn, dán nhanh" },
   {
     value: "detailed",
@@ -49,7 +55,7 @@ function Segmented<T extends string>({
   onChange: (value: T) => void;
 }) {
   return (
-    <div className="grid grid-cols-2 gap-1 rounded-lg bg-stone-100 p-1 dark:bg-stone-950">
+    <div className="grid auto-cols-fr grid-flow-col gap-1 rounded-lg bg-stone-100 p-1 dark:bg-stone-950">
       {options.map((option) => (
         <button
           key={option.value}

@@ -15,7 +15,11 @@ export type { SettlementMode };
  * chuyen tien tach theo chieu. Dai hon nhung khong con canh nguoi ung tien
  * nhieu nhat lai hien mot con so trong giong het nguoi con no.
  */
-export type SummaryVariant = "compact" | "detailed";
+export const ULTRA_COMPACT_VARIANT = "ultra-compact";
+export type SummaryVariant =
+  | "compact"
+  | "detailed"
+  | typeof ULTRA_COMPACT_VARIANT;
 
 const THOUSAND = 1000;
 const SHORT_MONEY_FRACTION_DIGITS = 1;
@@ -171,6 +175,10 @@ function buildPersonLines(
   );
 
   return participants.map((participant) => {
+    const row = balanceByParticipantId.get(participant.id);
+    if (variant === ULTRA_COMPACT_VARIANT) {
+      return `- ${participant.name}: phải chịu ${formatShortMoney(row?.owed ?? 0)} · đã trả ${formatShortMoney(row?.paid ?? 0)}`;
+    }
     const terms: string[] = [];
     for (const expense of expenses) {
       const share = expense.splits.find(
@@ -179,7 +187,6 @@ function buildPersonLines(
       if (share && share.amount > 0) terms.push(formatThousands(share.amount));
     }
 
-    const row = balanceByParticipantId.get(participant.id);
     const owed = row?.owed || 0;
     const head =
       terms.length === 0
@@ -336,7 +343,9 @@ export function buildSummaryDocument(
           : "CÁC KHOẢN CHI",
       lines:
         expenses.length > 0
-          ? buildExpenseLines(expenses, nameById, participants.length)
+          ? variant === ULTRA_COMPACT_VARIANT
+            ? []
+            : buildExpenseLines(expenses, nameById, participants.length)
           : [EMPTY_EXPENSES_LINE],
     },
   ];

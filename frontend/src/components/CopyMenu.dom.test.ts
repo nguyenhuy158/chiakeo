@@ -36,6 +36,7 @@ const {
 }));
 
 vi.mock("../../../shared/summary-text", () => ({
+  ULTRA_COMPACT_VARIANT: "ultra-compact",
   buildSummaryText: (_input: unknown, variant = "compact") =>
     `summary ${variant}`,
 }));
@@ -145,6 +146,21 @@ afterEach(() => {
 });
 
 describe("CopyMenu", () => {
+  it("copies ultra compact text and images", async () => {
+    render();
+    open();
+    await act(async () => item("Copy tổng kết siêu gọn").click());
+    expect(copyText).toHaveBeenCalledWith("summary ultra-compact");
+    open();
+    await act(async () => item("Copy ảnh siêu gọn").click());
+    expect(renderSummaryImage).toHaveBeenCalledWith(
+      expect.anything(),
+      "ultra-compact",
+      "plain",
+      true,
+      true,
+    );
+  });
   it("opens in the viewport and closes on trigger, Escape, outside click, resize, and scroll", () => {
     render(undefined, "custom-trigger");
     expect(trigger().className).toBe("custom-trigger");
