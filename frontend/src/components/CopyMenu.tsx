@@ -130,7 +130,10 @@ export function CopyMenu({
   } = usePreferences();
   const updatePreferences = useUpdatePreferences();
   const input = useMemo(
-    () => ({ ...baseInput, roundDownRefunds }),
+    () => ({
+      ...baseInput,
+      roundDownRefunds: baseInput.roundDownRefunds ?? roundDownRefunds,
+    }),
     [baseInput, roundDownRefunds],
   );
   const triggerRef = useRef<HTMLButtonElement>(null);
