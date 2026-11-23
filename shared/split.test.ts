@@ -229,6 +229,80 @@ describe("calculateBalances", () => {
     ]);
   });
 
+  it("bo phan tra du duoi don vi lam tron cua khoan tra no", () => {
+    const expenses: ExpenseInput[] = [
+      {
+        payerParticipantId: "host",
+        amount: 91000,
+        shares: [
+          { participantId: "host", amount: 45500 },
+          { participantId: "a", amount: 45500 },
+        ],
+      },
+      {
+        kind: "transfer",
+        payerParticipantId: "a",
+        amount: 46000,
+        shares: [{ participantId: "host", amount: 46000 }],
+      },
+    ];
+
+    expect(calculateBalances(["host", "a"], expenses)).toEqual([
+      { participantId: "host", paid: 91000, owed: 91000, balance: 0 },
+      { participantId: "a", paid: 45500, owed: 45500, balance: 0 },
+    ]);
+  });
+
+  it("giu phan tra du tu don vi lam tron tro len", () => {
+    const expenses: ExpenseInput[] = [
+      {
+        payerParticipantId: "host",
+        amount: 91000,
+        shares: [
+          { participantId: "host", amount: 45500 },
+          { participantId: "a", amount: 45500 },
+        ],
+      },
+      {
+        kind: "transfer",
+        payerParticipantId: "a",
+        amount: 47000,
+        shares: [{ participantId: "host", amount: 47000 }],
+      },
+    ];
+
+    expect(calculateBalances(["host", "a"], expenses)).toEqual([
+      { participantId: "host", paid: 91000, owed: 92500, balance: -1500 },
+      { participantId: "a", paid: 47000, owed: 45500, balance: 1500 },
+    ]);
+  });
+
+  it("khong phu thuoc thu tu khi khoan tra no dung truoc khoan chi", () => {
+    const transfer: ExpenseInput = {
+      kind: "transfer",
+      payerParticipantId: "a",
+      amount: 46000,
+      shares: [{ participantId: "host", amount: 46000 }],
+    };
+    const expense: ExpenseInput = {
+      payerParticipantId: "host",
+      amount: 91000,
+      shares: [
+        { participantId: "host", amount: 45500 },
+        { participantId: "a", amount: 45500 },
+      ],
+    };
+
+    expect(calculateBalances(["host", "a"], [transfer, expense])).toEqual(
+      calculateBalances(["host", "a"], [expense, transfer]),
+    );
+    expect(
+      calculateBalances(["host", "a"], [transfer, expense]).map(
+        (row) => row.balance,
+      ),
+    ).toEqual([0, 0]);
+  });
+
   it("bo qua khoan chi co payer khong ton tai", () => {
     const expenses: ExpenseInput[] = [
       {
