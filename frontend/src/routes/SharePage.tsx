@@ -24,6 +24,7 @@ import { ShareSummaryImage } from "../components/ShareSummaryImage";
 import { ThemeToggle } from "../components/theme";
 import { EmptyState, GamePageSkeleton } from "../components/ui";
 import { formatMoney } from "../core/domain/money";
+import { Col, Container, Grid } from "../ui/Grid";
 import { PagedList } from "../ui/PagedList";
 
 type ShareTab = "summary" | ShareSection;
@@ -385,20 +386,20 @@ export function SharePage() {
 
   if (shareQuery.isPending) {
     return (
-      <div className="mx-auto w-full max-w-2xl px-4 py-4 sm:px-5">
+      <Container className="py-4">
         <GamePageSkeleton split={false} />
-      </div>
+      </Container>
     );
   }
 
   if (shareQuery.isError || !shareQuery.data) {
     return (
-      <div className="mx-auto w-full max-w-2xl px-5 py-10">
+      <Container className="py-8">
         <EmptyState
           title="Không tìm thấy link chia sẻ"
           description="Link không tồn tại, đã bị tắt hoặc đã hết hạn."
         />
-      </div>
+      </Container>
     );
   }
 
@@ -427,9 +428,9 @@ export function SharePage() {
     : "summary";
 
   return (
-    <div className="mx-auto flex h-dvh w-full max-w-6xl flex-col gap-2 overflow-hidden px-4 py-3 sm:gap-4 sm:px-5 sm:py-4">
-      <div className="flex shrink-0 items-center justify-between gap-3">
-        <div className="min-w-0">
+    <Container className="flex h-dvh flex-col gap-2 overflow-hidden py-3 sm:gap-4 sm:py-4">
+      <Grid className="shrink-0 items-center">
+        <Col mobile={2} desktop={9} className="min-w-0">
           <p className="text-sm font-medium text-violet-600 dark:text-violet-400">
             {view.code}
           </p>
@@ -445,8 +446,12 @@ export function SharePage() {
               </span>
             )}
           </div>
-        </div>
-        <div className="flex shrink-0 items-center gap-2">
+        </Col>
+        <Col
+          mobile={2}
+          desktop={3}
+          className="flex items-center justify-end gap-2"
+        >
           <CopyMenu
             input={{
               code: view.code,
@@ -461,8 +466,8 @@ export function SharePage() {
             }}
           />
           <ThemeToggle />
-        </div>
-      </div>
+        </Col>
+      </Grid>
 
       {tabs.length > 1 && (
         <div
@@ -579,6 +584,6 @@ export function SharePage() {
           </>
         )}
       </div>
-    </div>
+    </Container>
   );
 }
