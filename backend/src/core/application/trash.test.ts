@@ -14,6 +14,8 @@ function gameRow(overrides: Partial<GameRow> = {}): GameRow {
     ownerUserId: OWNER,
     code: "DSKVUF",
     name: "Cầu lông",
+    playedFrom: "",
+    playedTo: "",
     settlementMode: "host",
     settlementHostId: "",
     location: "",

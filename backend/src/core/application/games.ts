@@ -10,6 +10,7 @@ import {
   isClosed,
   toCloseMode,
 } from "../../../../shared/game-closing";
+import { isValidPlayedRange } from "../../../../shared/played-dates";
 import type { GameInput, GameUpdateInput } from "../../../../shared/schemas";
 import {
   DEFAULT_SETTLEMENT_MODE,
@@ -69,6 +70,8 @@ async function listGamesWhere(
     id: row.id,
     code: row.code,
     name: row.name,
+    playedFrom: row.playedFrom,
+    playedTo: row.playedTo,
     createdAt: row.createdAt,
     participantCount: participantCounts.get(row.id) || 0,
     expenseCount: expenseCounts.get(row.id) || 0,
@@ -156,12 +159,18 @@ export async function createGame(
   userId: string,
   input: GameInput,
 ): Promise<ApiGameDetail> {
+  const playedFrom = input.playedFrom ?? "";
+  const playedTo = input.playedTo ?? "";
+  if (!isValidPlayedRange(playedFrom, playedTo)) throw new InvalidInputError();
+
   const now = nowIso();
   const game = {
     id: createId("game"),
     ownerUserId: userId,
     code: createGameCode(),
     name: input.name,
+    playedFrom,
+    playedTo,
     settlementMode: input.settlementMode ?? DEFAULT_SETTLEMENT_MODE,
     settlementHostId: input.settlementHostId ?? "",
     location: "",
@@ -219,6 +228,8 @@ export async function updateGame(
 
   const changes: GameChanges = {
     ...(input.name === undefined ? {} : { name: input.name }),
+    ...(input.playedFrom === undefined ? {} : { playedFrom: input.playedFrom }),
+    ...(input.playedTo === undefined ? {} : { playedTo: input.playedTo }),
     ...(input.settlementMode === undefined
       ? {}
       : { settlementMode: input.settlementMode }),
@@ -231,6 +242,14 @@ export async function updateGame(
   };
 
   if (Object.keys(changes).length === 0) throw new InvalidInputError();
+  if (
+    !isValidPlayedRange(
+      changes.playedFrom ?? game.playedFrom,
+      changes.playedTo ?? game.playedTo,
+    )
+  ) {
+    throw new InvalidInputError();
+  }
 
   const previousName = game.name;
   await repo.games.update(game.id, changes, nowIso());
@@ -294,6 +313,8 @@ export async function duplicateGame(
     ownerUserId: userId,
     code: createGameCode(),
     name: `${source.name} (bản sao)`,
+    playedFrom: "",
+    playedTo: "",
     settlementMode: source.settlementMode,
     settlementHostId: newIdByOldId.get(source.settlementHostId) || "",
     location: source.location,
@@ -470,6 +491,8 @@ export async function listDeletedGames(
     id: row.id,
     code: row.code,
     name: row.name,
+    playedFrom: row.playedFrom,
+    playedTo: row.playedTo,
     createdAt: row.createdAt,
     deletedAt: row.deletedAt as string,
     participantCount: participantCounts.get(row.id) || 0,

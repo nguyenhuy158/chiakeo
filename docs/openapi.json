@@ -4680,6 +4680,12 @@
               "name": {
                 "type": "string"
               },
+              "playedFrom": {
+                "type": "string"
+              },
+              "playedTo": {
+                "type": "string"
+              },
               "createdAt": {
                 "type": "string"
               },
@@ -4724,7 +4730,9 @@
               "id",
               "isOwner",
               "name",
-              "participantCount"
+              "participantCount",
+              "playedFrom",
+              "playedTo"
             ]
           },
           {
@@ -5531,6 +5539,12 @@
             "name": {
               "type": "string"
             },
+            "playedFrom": {
+              "type": "string"
+            },
+            "playedTo": {
+              "type": "string"
+            },
             "createdAt": {
               "type": "string"
             },
@@ -5575,7 +5589,9 @@
             "id",
             "isOwner",
             "name",
-            "participantCount"
+            "participantCount",
+            "playedFrom",
+            "playedTo"
           ]
         }
       },
@@ -5595,6 +5611,12 @@
             "type": "string"
           },
           "name": {
+            "type": "string"
+          },
+          "playedFrom": {
+            "type": "string"
+          },
+          "playedTo": {
             "type": "string"
           },
           "settlementMode": {
@@ -5837,6 +5859,8 @@
           "location",
           "name",
           "participants",
+          "playedFrom",
+          "playedTo",
           "settlementHostId",
           "settlementMode",
           "shareLink",
@@ -6968,6 +6992,14 @@
             "minLength": 1,
             "maxLength": 100
           },
+          "playedFrom": {
+            "default": "",
+            "type": "string"
+          },
+          "playedTo": {
+            "default": "",
+            "type": "string"
+          },
           "settlementMode": {
             "default": "host",
             "type": "string",
@@ -6994,6 +7026,12 @@
             "type": "string",
             "minLength": 1,
             "maxLength": 100
+          },
+          "playedFrom": {
+            "type": "string"
+          },
+          "playedTo": {
+            "type": "string"
           },
           "settlementMode": {
             "type": "string",
