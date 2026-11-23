@@ -605,3 +605,51 @@ describe("GameDashboard compact", () => {
     expect(onRemoveTransfer).toHaveBeenCalledWith("transfer-1");
   });
 });
+
+describe("bulk reminders", () => {
+  it.each(["p2p", "host", "pick", "off"] as const)(
+    "uses current debts in %s mode for both layouts",
+    async (settlementMode) => {
+      for (const compact of [false, true]) {
+        render({
+          compact,
+          settlementMode,
+          settlementHostId: "binh",
+          shareUrl: "https://x/share/ab12",
+        });
+        if (compact) act(() => button("Chuyển khoản")?.click());
+        await act(async () => button("Nhắc tất cả")?.click());
+        expect(copyText).toHaveBeenLastCalledWith(
+          'Nhắc thanh toán kèo "Cầu tối":\nBình → An: 50.000 ₫\nXem chi tiết và QR: https://x/share/ab12',
+        );
+      }
+    },
+  );
+
+  it("uses rounded host refunds and reports clipboard failure", async () => {
+    preferences.roundDownRefunds = true;
+    copyText.mockResolvedValueOnce(false);
+    render({
+      settlementMode: "pick",
+      settlementHostId: "an",
+      summary: {
+        ...summary,
+        balances: [
+          { participantId: "an", paid: 0, owed: 7999, balance: -7999 },
+          { participantId: "binh", paid: 7999, owed: 0, balance: 7999 },
+        ],
+      },
+    });
+    await act(async () => button("Nhắc tất cả")?.click());
+    expect(copyText).toHaveBeenCalledWith(
+      'Nhắc thanh toán kèo "Cầu tối":\nAn → Bình: 7.000 ₫',
+    );
+    expect(toastError).toHaveBeenCalledWith("Không sao chép được lời nhắc");
+    render({ settlePending: true });
+    expect(button("Nhắc tất cả")?.disabled).toBe(true);
+    render({ onSettle: undefined });
+    expect(button("Nhắc tất cả")).toBeUndefined();
+    render({ summary: { ...summary, settlements: [] } });
+    expect(button("Nhắc tất cả")).toBeUndefined();
+  });
+});

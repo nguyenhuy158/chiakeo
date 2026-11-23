@@ -6,7 +6,10 @@ import type {
   ApiParticipant,
   ApiSummary,
 } from "../../../shared/api-types";
-import { buildPaymentReminder } from "../../../shared/payment-reminder";
+import {
+  buildAllPaymentReminders,
+  buildPaymentReminder,
+} from "../../../shared/payment-reminder";
 import type { SettlementMode } from "../../../shared/schemas";
 import {
   calculateHostTransfers,
@@ -18,6 +21,7 @@ import { copyText } from "../adapters/browser/clipboard";
 import { usePreferences } from "../adapters/react-query/queries";
 import { getQrProvider } from "../core/container";
 import { formatMoney } from "../core/domain/money";
+import { Button } from "../ui/Button";
 import { Checkbox } from "../ui/Checkbox";
 import { PagedList } from "../ui/PagedList";
 import { AdaptiveSheet } from "./AdaptiveSheet";
@@ -67,6 +71,37 @@ export function ReminderButton({
       <Copy size={14} />
       Nhắc
     </button>
+  );
+}
+
+function RemindAllButton({
+  gameName,
+  rows,
+  shareUrl,
+  disabled,
+}: {
+  gameName: string;
+  rows: TransferRow[];
+  shareUrl?: string;
+  disabled: boolean;
+}) {
+  async function handleCopy() {
+    const copied = await copyText(
+      buildAllPaymentReminders(gameName, rows, shareUrl),
+    );
+    (copied ? toast.success : toast.error)(
+      copied ? "Đã sao chép lời nhắc" : "Không sao chép được lời nhắc",
+    );
+  }
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      onClick={handleCopy}
+      disabled={disabled}
+    >
+      Nhắc tất cả
+    </Button>
   );
 }
 
@@ -151,9 +186,18 @@ function GameDashboardFull({
     settlementHostId,
   );
   const host = hostId ? participantById.get(hostId) : undefined;
-  const hostTransfers = host
-    ? calculateHostTransfers(summary.balances, hostId, roundDownRefunds)
-    : [];
+  const transferRows = buildTransferRows(
+    participants,
+    summary,
+    settlementMode,
+    settlementHostId,
+    roundDownRefunds,
+  );
+  const hostTransfers = transferRows.map((row) => ({
+    participant: row.from.id === hostId ? row.to : row.from,
+    toHost: row.settlement.toParticipantId === hostId,
+    amount: row.amount,
+  }));
 
   return (
     <aside className="space-y-5">
@@ -216,6 +260,15 @@ function GameDashboardFull({
           )}
         </div>
       </section>
+
+      {onSettle && transferRows.length > 0 && (
+        <RemindAllButton
+          gameName={name}
+          rows={transferRows}
+          shareUrl={shareUrl}
+          disabled={settlePending}
+        />
+      )}
 
       {(canEditMode || settlementMode !== "off") && (
         <section className="rounded-lg border border-border bg-surface p-4 shadow-sm">
@@ -296,14 +349,11 @@ function GameDashboardFull({
                   </div>
 
                   {hostTransfers.map((transfer) => {
-                    const participant = participantById.get(
-                      transfer.participantId,
-                    );
-                    if (!participant) return null;
+                    const participant = transfer.participant;
 
                     return (
                       <div
-                        key={transfer.participantId}
+                        key={transfer.participant.id}
                         className="rounded-md border border-border p-3"
                       >
                         <p className="text-sm font-medium text-stone-950 dark:text-stone-50">
@@ -367,12 +417,8 @@ function GameDashboardFull({
                     : "Thêm khoản chi để tính tiền."}
                 </p>
               )
-            ) : summary.settlements.length > 0 ? (
-              summary.settlements.map((settlement) => {
-                const from = participantById.get(settlement.fromParticipantId);
-                const to = participantById.get(settlement.toParticipantId);
-                if (!from || !to) return null;
-
+            ) : transferRows.length > 0 ? (
+              transferRows.map(({ settlement, from, to }) => {
                 return (
                   <div
                     key={`${settlement.fromParticipantId}-${settlement.toParticipantId}-${settlement.amount}`}
@@ -501,10 +547,82 @@ type TransferRow = {
   key: string;
   fromName: string;
   toName: string;
+  from: ApiParticipant;
+  to: ApiParticipant;
   amount: number;
   settlement: SettlementRow;
   qr?: { target: ApiParticipant; amount: number; hint: string };
 };
+
+function buildTransferRows(
+  participants: ApiParticipant[],
+  summary: ApiSummary,
+  settlementMode: SettlementMode,
+  settlementHostId: string,
+  roundDownRefunds: boolean,
+): TransferRow[] {
+  const participantById = new Map(
+    participants.map((person) => [person.id, person]),
+  );
+  const isHostMode = settlementMode === "host" || settlementMode === "pick";
+  const hostId = resolveHostParticipantId(
+    summary.balances,
+    settlementMode,
+    settlementHostId,
+  );
+  const host = participantById.get(hostId);
+  const transferRows: TransferRow[] = [];
+  if (isHostMode && host) {
+    for (const transfer of calculateHostTransfers(
+      summary.balances,
+      hostId,
+      roundDownRefunds,
+    )) {
+      const participant = participantById.get(transfer.participantId);
+      if (!participant) continue;
+      const from = transfer.toHost ? participant : host;
+      const to = transfer.toHost ? host : participant;
+      transferRows.push({
+        key: `${from.id}-${to.id}`,
+        fromName: from.name,
+        toName: to.name,
+        from,
+        to,
+        amount: transfer.amount,
+        settlement: {
+          fromParticipantId: from.id,
+          toParticipantId: to.id,
+          amount: transfer.amount,
+        },
+        qr: transfer.toHost
+          ? {
+              target: host,
+              amount: QR_AMOUNT_FREE,
+              hint: "Quét rồi tự nhập số tiền của mình",
+            }
+          : undefined,
+      });
+    }
+  } else if (!isHostMode) {
+    for (const settlement of summary.settlements) {
+      const from = participantById.get(settlement.fromParticipantId);
+      const to = participantById.get(settlement.toParticipantId);
+      if (!from || !to) continue;
+      transferRows.push({
+        key: `${from.id}-${to.id}-${settlement.amount}`,
+        fromName: from.name,
+        toName: to.name,
+        from,
+        to,
+        amount: settlement.amount,
+        settlement,
+        qr: { target: to, amount: settlement.amount, hint: "" },
+      });
+    }
+  }
+
+  return transferRows;
+}
 
 const COMPACT_ROW_HEIGHT_PX = 56;
 const VIEW_BUTTON =
@@ -537,59 +655,19 @@ function GameDashboardCompact({
     participants.map((participant) => [participant.id, participant]),
   );
   const transfers = expenses.filter((expense) => expense.kind === "transfer");
-  const isHostMode = settlementMode === "host" || settlementMode === "pick";
   const hostId = resolveHostParticipantId(
     summary.balances,
     settlementMode,
     settlementHostId,
   );
-  const host = hostId ? participantById.get(hostId) : undefined;
 
-  const transferRows: TransferRow[] = [];
-  if (isHostMode && host) {
-    for (const transfer of calculateHostTransfers(
-      summary.balances,
-      hostId,
-      roundDownRefunds,
-    )) {
-      const participant = participantById.get(transfer.participantId);
-      if (!participant) continue;
-      const from = transfer.toHost ? participant : host;
-      const to = transfer.toHost ? host : participant;
-      transferRows.push({
-        key: `${from.id}-${to.id}`,
-        fromName: from.name,
-        toName: to.name,
-        amount: transfer.amount,
-        settlement: {
-          fromParticipantId: from.id,
-          toParticipantId: to.id,
-          amount: transfer.amount,
-        },
-        qr: transfer.toHost
-          ? {
-              target: host,
-              amount: QR_AMOUNT_FREE,
-              hint: "Quét rồi tự nhập số tiền của mình",
-            }
-          : undefined,
-      });
-    }
-  } else if (!isHostMode) {
-    for (const settlement of summary.settlements) {
-      const from = participantById.get(settlement.fromParticipantId);
-      const to = participantById.get(settlement.toParticipantId);
-      if (!from || !to) continue;
-      transferRows.push({
-        key: `${from.id}-${to.id}-${settlement.amount}`,
-        fromName: from.name,
-        toName: to.name,
-        amount: settlement.amount,
-        settlement,
-        qr: { target: to, amount: settlement.amount, hint: "" },
-      });
-    }
-  }
+  const transferRows = buildTransferRows(
+    participants,
+    summary,
+    settlementMode,
+    settlementHostId,
+    roundDownRefunds,
+  );
 
   const transferEmpty =
     settlementMode === "off"
@@ -729,6 +807,14 @@ function GameDashboardCompact({
         )}
         {view === "transfers" && (
           <div className="flex h-full min-h-0 flex-col gap-2">
+            {onSettle && transferRows.length > 0 && (
+              <RemindAllButton
+                gameName={name}
+                rows={transferRows}
+                shareUrl={shareUrl}
+                disabled={settlePending}
+              />
+            )}
             {onSettleMany && transferRows.length > 0 && (
               <div className="flex shrink-0 items-center justify-between gap-2 rounded-md bg-surface-muted pl-3 pr-1">
                 <Checkbox
