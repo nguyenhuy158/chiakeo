@@ -25,7 +25,7 @@
     "e2e": "node e2e/run.mjs",
     "e2e:smoke": "node e2e/ui-smoke.mjs",
     "e2e:prod": "E2E_BASE_URL=https://chiakeo.huyab.cfd node e2e/readonly-smoke.mjs",
-    "openapi:generate": "node scripts/build-info.mjs && tsx scripts/generate-openapi.ts",
+    "openapi:generate": "node scripts/build-info.mjs && tsx scripts/generate-openapi.ts && biome format --write docs/openapi.json",
     "openapi:check": "tsx scripts/generate-openapi.ts --check && spectral lint docs/openapi.json --fail-severity warn"
   },
   "dependencies": {

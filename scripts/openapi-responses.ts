@@ -5,6 +5,8 @@ import type { ApiGameEvent } from "../shared/game-events";
 import type { UserPreferences } from "../shared/schemas";
 
 export type OpenApiResponses = {
+  Bundles: Api.ApiBundleSummary[];
+  BundleDetail: Api.ApiBundleDetail;
   Version: BuildInfo;
   Health: { ok: true; db: "ok" };
   HealthError: { ok: false; db: "error"; hint: string };

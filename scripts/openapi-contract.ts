@@ -10,7 +10,6 @@ import {
 import * as inputs from "../shared/schemas";
 import type { OpenApiResponses } from "./openapi-responses";
 
-export const OPENAPI_PATH = "/api/openapi.json";
 export const OPENAPI_FILE = "docs/openapi.json";
 export const JSON_MEDIA_TYPE = "application/json";
 export const FORM_MEDIA_TYPE = "application/x-www-form-urlencoded";
@@ -56,6 +55,21 @@ const { CREATED } = HTTP_STATUS;
 const { PUBLIC, SESSION } = ACCESS;
 
 export const OPERATIONS: Operation[] = [
+  { method: GET, path: "/api/bundles", response: "Bundles" },
+  {
+    method: POST,
+    path: "/api/bundles",
+    response: "BundleDetail",
+    input: "bundleInputSchema",
+  },
+  { method: GET, path: "/api/bundles/:bundleId", response: "BundleDetail" },
+  {
+    method: POST,
+    path: "/api/bundles/:bundleId/settle",
+    response: "BundleDetail",
+    input: "bundleSettleInputSchema",
+  },
+  { method: DELETE, path: "/api/bundles/:bundleId", response: "Ok" },
   { method: GET, path: "/api/version", response: "Version", access: PUBLIC },
   { method: GET, path: "/api/health", response: "Health", access: PUBLIC },
   { method: GET, path: "/api/session", response: "Session", access: PUBLIC },

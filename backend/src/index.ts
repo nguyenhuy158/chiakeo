@@ -60,9 +60,9 @@ app.use("/api/*", (c, next) => {
   })(c, next);
 });
 
-// Code dang chay tren server nay, de kiem nhanh xem deploy da len chua.
 app.get(OPENAPI_PATH, (c) => c.json(openapi));
 
+// Code dang chay tren server nay, de kiem nhanh xem deploy da len chua.
 app.get("/api/version", (c) => c.json(BUILD_INFO));
 
 app.get("/api/health", async (c) => {

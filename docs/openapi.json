@@ -21,6 +21,10 @@
       "description": "ai operations"
     },
     {
+      "name": "bundles",
+      "description": "bundles operations"
+    },
+    {
       "name": "contacts",
       "description": "contacts operations"
     },
@@ -94,6 +98,292 @@
     }
   ],
   "paths": {
+    "/api/bundles": {
+      "get": {
+        "operationId": "get__api_bundles",
+        "summary": "GET /api/bundles",
+        "description": "Application REST operation. Runtime Zod refinements and authorization remain authoritative.",
+        "tags": ["bundles"],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Bundles"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request rejected or server error; error contains the application error code or message.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "SecureSessionCookie": []
+          },
+          {
+            "SsoCookie": []
+          },
+          {
+            "SsoBearer": []
+          },
+          {
+            "ApiToken": []
+          }
+        ]
+      },
+      "post": {
+        "operationId": "post__api_bundles",
+        "summary": "POST /api/bundles",
+        "description": "Application REST operation. Runtime Zod refinements and authorization remain authoritative.",
+        "tags": ["bundles"],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/bundleInputSchema"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BundleDetail"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request rejected or server error; error contains the application error code or message.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "SecureSessionCookie": []
+          },
+          {
+            "SsoCookie": []
+          },
+          {
+            "SsoBearer": []
+          },
+          {
+            "ApiToken": []
+          }
+        ]
+      }
+    },
+    "/api/bundles/{bundleId}": {
+      "get": {
+        "operationId": "get__api_bundles_bundleId",
+        "summary": "GET /api/bundles/{bundleId}",
+        "description": "Application REST operation. Runtime Zod refinements and authorization remain authoritative.",
+        "tags": ["bundles"],
+        "parameters": [
+          {
+            "name": "bundleId",
+            "in": "path",
+            "required": true,
+            "description": "bundleId identifier",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BundleDetail"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request rejected or server error; error contains the application error code or message.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "SecureSessionCookie": []
+          },
+          {
+            "SsoCookie": []
+          },
+          {
+            "SsoBearer": []
+          },
+          {
+            "ApiToken": []
+          }
+        ]
+      },
+      "delete": {
+        "operationId": "delete__api_bundles_bundleId",
+        "summary": "DELETE /api/bundles/{bundleId}",
+        "description": "Application REST operation. Runtime Zod refinements and authorization remain authoritative.",
+        "tags": ["bundles"],
+        "parameters": [
+          {
+            "name": "bundleId",
+            "in": "path",
+            "required": true,
+            "description": "bundleId identifier",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Ok"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request rejected or server error; error contains the application error code or message.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "SecureSessionCookie": []
+          },
+          {
+            "SsoCookie": []
+          },
+          {
+            "SsoBearer": []
+          },
+          {
+            "ApiToken": []
+          }
+        ]
+      }
+    },
+    "/api/bundles/{bundleId}/settle": {
+      "post": {
+        "operationId": "post__api_bundles_bundleId_settle",
+        "summary": "POST /api/bundles/{bundleId}/settle",
+        "description": "Application REST operation. Runtime Zod refinements and authorization remain authoritative.",
+        "tags": ["bundles"],
+        "parameters": [
+          {
+            "name": "bundleId",
+            "in": "path",
+            "required": true,
+            "description": "bundleId identifier",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/bundleSettleInputSchema"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BundleDetail"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request rejected or server error; error contains the application error code or message.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "SecureSessionCookie": []
+          },
+          {
+            "SsoCookie": []
+          },
+          {
+            "SsoBearer": []
+          },
+          {
+            "ApiToken": []
+          }
+        ]
+      }
+    },
     "/api/version": {
       "get": {
         "operationId": "get__api_version",
@@ -4356,6 +4646,21 @@
   },
   "components": {
     "schemas": {
+      "Generated_c123abb90da01e0fcc10827df8349e8a0abf1ecc6e9a123bdcda14694c3469fb": {
+        "type": "object",
+        "properties": {
+          "bankId": {
+            "type": "string"
+          },
+          "accountNo": {
+            "type": "string"
+          },
+          "accountName": {
+            "type": "string"
+          }
+        },
+        "required": ["accountName", "accountNo", "bankId"]
+      },
       "CloseModeValue": {
         "enum": ["", "archived", "auto", "manual"],
         "type": "string"
@@ -4813,7 +5118,7 @@
         "enum": ["add", "set", "use"],
         "type": "string"
       },
-      "Generated_f9b4a59c1d8e6e7615ddc6a08b4673848d1cf79c7e2a123d4cba6f8b1bc2c0f6": {
+      "Generated_517cb42e44ae5bb520e76dc658748c0033996fed1aad83e66082ce531207aafe": {
         "type": "object",
         "properties": {
           "summaryShowQr": {
@@ -4831,13 +5136,21 @@
           "hideSettledGames": {
             "description": "An cuoc choi da thu tien xong khoi danh sach dang choi.",
             "type": "boolean"
+          },
+          "tags": {
+            "description": "Tag da tao, dung lai khi gan cho cuoc choi.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         },
         "required": [
           "hideSettledGames",
           "roundDownRefunds",
           "summaryShowAvatar",
-          "summaryShowQr"
+          "summaryShowQr",
+          "tags"
         ]
       },
       "ResolvedAiExpense": {
@@ -4892,6 +5205,93 @@
             "required": ["payerParticipantId", "splitParticipantIds"]
           }
         ]
+      },
+      "Bundles": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            },
+            "createdAt": {
+              "type": "string"
+            },
+            "gameCount": {
+              "type": "number"
+            }
+          },
+          "required": ["createdAt", "gameCount", "id", "name"]
+        }
+      },
+      "BundleDetail": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "games": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "code": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                }
+              },
+              "required": ["code", "id", "name"]
+            }
+          },
+          "people": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "total": {
+                  "type": "number"
+                },
+                "debts": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "gameId": {
+                        "type": "string"
+                      },
+                      "gameName": {
+                        "type": "string"
+                      },
+                      "toName": {
+                        "type": "string"
+                      },
+                      "amount": {
+                        "type": "number"
+                      }
+                    },
+                    "required": ["amount", "gameId", "gameName", "toName"]
+                  }
+                }
+              },
+              "required": ["debts", "name", "total"]
+            }
+          }
+        },
+        "required": ["games", "id", "name", "people"]
       },
       "Version": {
         "description": "Dau vet code dang chay: sinh luc build tu git (xem scripts/build-info.mjs) va\ndoc lai qua GET /api/version hoac tool MCP get_version, de kiem nhanh xem\nwebsite da deploy code nao.",
@@ -5078,6 +5478,12 @@
                 "accountName": {
                   "type": "string"
                 },
+                "accounts": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Generated_c123abb90da01e0fcc10827df8349e8a0abf1ecc6e9a123bdcda14694c3469fb"
+                  }
+                },
                 "gameCount": {
                   "description": "So cuoc chia da co nguoi nay — nguoi hay di cung se len dau danh sach.",
                   "type": "number"
@@ -5197,6 +5603,23 @@
           "settlementHostId": {
             "description": "Dau moi da chon cho che do \"pick\"; rong la chua chon.",
             "type": "string"
+          },
+          "location": {
+            "description": "Dia diem choi; rong la chua nhap.",
+            "type": "string"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "shareShow": {
+            "type": "array",
+            "items": {
+              "enum": ["expenses", "matrix", "photos"],
+              "type": "string"
+            }
           },
           "createdAt": {
             "type": "string"
@@ -5411,12 +5834,15 @@
           "expenses",
           "id",
           "isOwner",
+          "location",
           "name",
           "participants",
           "settlementHostId",
           "settlementMode",
           "shareLink",
-          "summary"
+          "shareShow",
+          "summary",
+          "tags"
         ]
       },
       "Summary": {
@@ -5532,6 +5958,18 @@
           "closedAt": {
             "description": "Luc cuoc choi duoc dong; null la dang choi. Nguoi xem link chi doc.",
             "type": ["null", "string"]
+          },
+          "shareShow": {
+            "description": "Phan chu cuoc choi cho hien them tren link chia se (mac dinh khong co).",
+            "type": "array",
+            "items": {
+              "enum": ["expenses", "matrix", "photos"],
+              "type": "string"
+            }
+          },
+          "roundDownRefunds": {
+            "description": "Tuy chon cua chu: host khong hoan phan le.",
+            "type": "boolean"
           },
           "participants": {
             "type": "array",
@@ -5690,8 +6128,10 @@
           "expenses",
           "name",
           "participants",
+          "roundDownRefunds",
           "settlementHostId",
           "settlementMode",
+          "shareShow",
           "summary"
         ]
       },
@@ -6184,7 +6624,7 @@
         "type": "object",
         "properties": {
           "preferences": {
-            "$ref": "#/components/schemas/Generated_f9b4a59c1d8e6e7615ddc6a08b4673848d1cf79c7e2a123d4cba6f8b1bc2c0f6"
+            "$ref": "#/components/schemas/Generated_517cb42e44ae5bb520e76dc658748c0033996fed1aad83e66082ce531207aafe"
           }
         },
         "required": ["preferences"]
@@ -6389,6 +6829,41 @@
         },
         "required": ["name"]
       },
+      "bundleInputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "gameIds": {
+            "minItems": 2,
+            "maxItems": 8,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "required": ["name", "gameIds"]
+      },
+      "bundleSettleInputSchema": {
+        "type": "object",
+        "properties": {
+          "names": {
+            "minItems": 1,
+            "maxItems": 50,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "required": ["names"]
+      },
       "contactInputSchema": {
         "type": "object",
         "properties": {
@@ -6396,6 +6871,30 @@
             "type": "string",
             "minLength": 1,
             "maxLength": 50
+          },
+          "accounts": {
+            "maxItems": 20,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "bankId": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 20
+                },
+                "accountNo": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 30
+                },
+                "accountName": {
+                  "type": "string",
+                  "maxLength": 50
+                }
+              },
+              "required": ["bankId", "accountNo", "accountName"]
+            }
           },
           "bankId": {
             "default": "",
@@ -6422,6 +6921,30 @@
             "type": "string",
             "minLength": 1,
             "maxLength": 50
+          },
+          "accounts": {
+            "maxItems": 20,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "bankId": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 20
+                },
+                "accountNo": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 30
+                },
+                "accountName": {
+                  "type": "string",
+                  "maxLength": 50
+                }
+              },
+              "required": ["bankId", "accountNo", "accountName"]
+            }
           },
           "bankId": {
             "type": "string",
@@ -6479,6 +7002,27 @@
           "settlementHostId": {
             "type": "string",
             "maxLength": 64
+          },
+          "location": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "tags": {
+            "maxItems": 10,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 30
+            }
+          },
+          "shareShow": {
+            "maxItems": 3,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": ["expenses", "matrix", "photos"]
+            }
           }
         }
       },
@@ -6977,6 +7521,15 @@
           },
           "hideSettledGames": {
             "type": "boolean"
+          },
+          "tags": {
+            "maxItems": 50,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 30
+            }
           }
         }
       },
