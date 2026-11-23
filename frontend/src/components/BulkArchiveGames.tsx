@@ -36,7 +36,6 @@ export function BulkArchiveGames() {
   }
 
   async function archiveSelected() {
-    if (running || selectedGames.length === 0) return;
     setRunning(true);
     setResult("");
     const failed: string[] = [];
