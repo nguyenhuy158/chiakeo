@@ -31,7 +31,7 @@ export type OpenApiResponses = {
   CreatedMcpToken: Api.ApiCreatedMcpToken;
   FunStats: Api.ApiFunStats;
   CrossBalances: Api.ApiCrossGameBalances;
-  Shuttles: Api.ApiShuttleStock;
+  Shuttles: Api.ApiShuttleTubes;
   Preferences: { preferences: UserPreferences };
   AiSuggestion: Api.ApiAiSuggestionResponse;
   PaymentOptions: Api.ApiPaymentOptions;

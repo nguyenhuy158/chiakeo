@@ -6,6 +6,11 @@ export const MAX_SHUTTLE_QUANTITY = 999;
 /** Chan kho phinh vo han khi bam "+" lien tuc; 1 thung ~ 12 trai nen du xa. */
 export const MAX_SHUTTLE_STOCK = 100_000;
 export const SHUTTLE_NOTE_MAX_LENGTH = 140;
+export const SHUTTLE_TUBE_NAME_MAX_LENGTH = 60;
+export const DEFAULT_TUBE_QUANTITY = 12;
+export const MAX_TUBE_QUANTITY = MAX_SHUTTLE_QUANTITY;
+export const MAX_SHUTTLE_PRICE = 100_000_000;
+export const SHUTTLE_CATEGORY_ID = "shuttle";
 /** So dong lich su tra ve cho FE: du de doi chieu vai buoi gan nhat. */
 export const SHUTTLE_ENTRY_LIST_LIMIT = 50;
 
@@ -56,4 +61,16 @@ export function shuttleStockError(
   if (nextStock < 0) return "shuttle_stock_negative";
   if (nextStock > MAX_SHUTTLE_STOCK) return "shuttle_stock_too_large";
   return null;
+}
+
+export function defaultShuttlePrice(
+  tubePrice: number,
+  initialQuantity: number,
+) {
+  if (initialQuantity < 1 || tubePrice < 0) return 0;
+  return Math.round(tubePrice / initialQuantity);
+}
+
+export function shuttleExpenseAmount(quantity: number, shuttlePrice: number) {
+  return quantity * shuttlePrice;
 }

@@ -353,7 +353,25 @@ export const OPERATIONS: Operation[] = [
   { method: GET, path: "/api/preferences", response: "Preferences" },
   {
     method: POST,
-    path: "/api/shuttles/entries",
+    path: "/api/shuttles/tubes",
+    response: "Shuttles",
+    input: "shuttleTubeInputSchema",
+    status: CREATED,
+  },
+  {
+    method: PATCH,
+    path: "/api/shuttles/tubes/:tubeId",
+    response: "Shuttles",
+    input: "shuttleTubeUpdateSchema",
+  },
+  {
+    method: DELETE,
+    path: "/api/shuttles/tubes/:tubeId",
+    response: "Shuttles",
+  },
+  {
+    method: POST,
+    path: "/api/shuttles/tubes/:tubeId/entries",
     response: "Shuttles",
     input: "shuttleEntryInputSchema",
   },

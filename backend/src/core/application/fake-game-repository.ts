@@ -19,6 +19,7 @@ import type {
   PaymentTransactionRow,
   ShareLinkRow,
   ShuttleEntryRow,
+  ShuttleTubeRow,
 } from "../ports/game-repository";
 
 const OWNER_USER_ID = "user_owner";
@@ -37,6 +38,7 @@ export type FakeState = {
   bundles: BundleRow[];
   paymentRequests: PaymentRequestRow[];
   paymentTransactions: PaymentTransactionRow[];
+  shuttleTubes: ShuttleTubeRow[];
   shuttleEntries: ShuttleEntryRow[];
   deviceCodes: DeviceCodeRow[];
   users: { id: string; name: string; email: string }[];
@@ -97,6 +99,7 @@ function emptyState(): FakeState {
     bundles: [],
     paymentRequests: [],
     paymentTransactions: [],
+    shuttleTubes: [],
     shuttleEntries: [],
     deviceCodes: [],
     users: [],
@@ -247,6 +250,9 @@ export function createFakeRepo(initial: Partial<FakeState> = {}) {
         state.splits = state.splits.filter(
           (row) => row.expenseId !== expenseId,
         );
+        state.shuttleEntries = state.shuttleEntries.filter(
+          (row) => row.expenseId !== expenseId,
+        );
       },
       listIdsSplitWith: async (participantId) => [
         ...new Set(
@@ -354,7 +360,45 @@ export function createFakeRepo(initial: Partial<FakeState> = {}) {
       listByUser: async () => [],
       upsert: async () => {},
     },
+    shuttleTubes: {
+      listByOwner: async (userId) =>
+        state.shuttleTubes
+          .filter((row) => row.ownerUserId === userId)
+          .sort((left, right) => right.createdAt.localeCompare(left.createdAt)),
+      getOwned: async (tubeId, userId) =>
+        state.shuttleTubes.find(
+          (row) => row.id === tubeId && row.ownerUserId === userId,
+        ) || null,
+      insert: async (row) => {
+        state.shuttleTubes.push(row);
+      },
+      update: async (tubeId, fields) => {
+        const tube = state.shuttleTubes.find((row) => row.id === tubeId);
+        if (tube) Object.assign(tube, fields);
+      },
+      delete: async (tubeId) => {
+        state.shuttleTubes = state.shuttleTubes.filter(
+          (row) => row.id !== tubeId,
+        );
+        state.shuttleEntries = state.shuttleEntries.filter(
+          (row) => row.tubeId !== tubeId,
+        );
+      },
+    },
     shuttleEntries: {
+      listByTube: async (tubeId) =>
+        state.shuttleEntries
+          .filter((row) => row.tubeId === tubeId)
+          .sort((left, right) => left.createdAt.localeCompare(right.createdAt)),
+      listByExpenseIds: async (expenseIds) =>
+        state.shuttleEntries.filter(
+          (row) => row.expenseId && expenseIds.includes(row.expenseId),
+        ),
+      deleteByExpense: async (expenseId) => {
+        state.shuttleEntries = state.shuttleEntries.filter(
+          (row) => row.expenseId !== expenseId,
+        );
+      },
       listByOwner: async (userId) =>
         state.shuttleEntries
           .filter((row) => row.ownerUserId === userId)

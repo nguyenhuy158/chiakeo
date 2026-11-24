@@ -17,6 +17,12 @@ import { createId, nowIso } from "../../lib/ids";
 import type { GameRepository } from "../ports/game-repository";
 import { InvalidInputError, NotFoundError } from "./errors";
 import {
+  assertShuttleStock,
+  carriesShuttle,
+  findExpenseShuttle,
+  writeExpenseShuttle,
+} from "./expense-shuttle";
+import {
   getAccessibleGame,
   hasGameAccess,
   loadGameDetail,
@@ -104,6 +110,14 @@ export async function addExpense(
 
   await assertMembers(repo, game.id, input.payerParticipantId, rows);
 
+  const shuttle = input.shuttle ?? null;
+  if (shuttle) {
+    if (!carriesShuttle(input.kind, normalizeCategory(input.category))) {
+      throw new InvalidInputError();
+    }
+    await assertShuttleStock(repo, game.ownerUserId, shuttle);
+  }
+
   const now = nowIso();
   const expenseId = createId("expense");
   const kind = input.kind;
@@ -124,6 +138,9 @@ export async function addExpense(
     updatedAt: now,
   });
   await repo.splits.replace(expenseId, toNewSplitRows(expenseId, rows));
+  if (shuttle) {
+    await writeExpenseShuttle(repo, game.ownerUserId, expenseId, shuttle);
+  }
 
   const detail = await loadGameDetail(repo, game, userId);
   // Ten nguoi lay tu detail vua tai, khong query them.
@@ -192,13 +209,29 @@ export async function updateExpense(
     row.expense.kind === "income" ? "income" : "expense";
   const kind = input.kind ?? storedKind;
   const title = input.title ?? row.expense.title;
+  const category =
+    input.category === undefined
+      ? normalizeCategory(row.expense.category)
+      : normalizeCategory(input.category);
+
+  const currentShuttle = await findExpenseShuttle(repo, row.expense.id);
+  const requestedShuttle =
+    input.shuttle === undefined ? currentShuttle : input.shuttle;
+  const carries = carriesShuttle(kind, category);
+  if (input.shuttle && !carries) throw new InvalidInputError();
+  const shuttle = carries ? requestedShuttle : null;
+  if (input.shuttle) {
+    await assertShuttleStock(
+      repo,
+      row.game.ownerUserId,
+      input.shuttle,
+      row.expense.id,
+    );
+  }
 
   await repo.expenses.update(row.expense.id, {
     kind,
-    category:
-      input.category === undefined
-        ? normalizeCategory(row.expense.category)
-        : normalizeCategory(input.category),
+    category,
     title: title || defaultTitleForKind(kind),
     note: input.note ?? row.expense.note,
     amount,
@@ -210,6 +243,14 @@ export async function updateExpense(
     row.expense.id,
     toNewSplitRows(row.expense.id, rows),
   );
+  if (input.shuttle !== undefined || (currentShuttle && !shuttle)) {
+    await writeExpenseShuttle(
+      repo,
+      row.game.ownerUserId,
+      row.expense.id,
+      shuttle,
+    );
+  }
 
   await recordEvent(repo, row.game.id, {
     kind: "expense_updated",

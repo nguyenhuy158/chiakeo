@@ -14,6 +14,7 @@ import {
   DEFAULT_SETTLEMENT_MODE,
   settlementModeSchema,
 } from "../../../../shared/schemas";
+import { SHUTTLE_CATEGORY_ID } from "../../../../shared/shuttles";
 import type { ExpenseInput, ExpenseKind } from "../../../../shared/split";
 import {
   calculateBalances,
@@ -105,10 +106,18 @@ async function loadGameData(
   ]);
   const participantIds = participantRows.map((row) => row.id);
 
-  const [paymentRows, splitRows] = await Promise.all([
+  const [paymentRows, splitRows, shuttleRows] = await Promise.all([
     repo.paymentProfiles.listByParticipantIds(participantIds),
     repo.splits.listByExpenseIds(expenseRows.map((row) => row.id)),
+    repo.shuttleEntries.listByExpenseIds(
+      expenseRows
+        .filter((row) => row.category === SHUTTLE_CATEGORY_ID)
+        .map((row) => row.id),
+    ),
   ]);
+  const shuttleByExpenseId = new Map(
+    shuttleRows.map((row) => [row.expenseId, row]),
+  );
   const paymentByParticipantId = new Map(
     paymentRows.map((row) => [row.participantId, row]),
   );
@@ -130,6 +139,7 @@ async function loadGameData(
 
   const expenses: ApiExpense[] = expenseRows.map((row) => {
     const splits = splitsByExpenseId.get(row.id) || [];
+    const shuttleEntry = shuttleByExpenseId.get(row.id);
     return {
       id: row.id,
       kind: toExpenseKind(row.kind),
@@ -149,6 +159,9 @@ async function loadGameData(
         weight: split.weight,
       })),
       excluded: row.excluded,
+      ...(shuttleEntry && {
+        shuttle: { tubeId: shuttleEntry.tubeId, quantity: -shuttleEntry.delta },
+      }),
       createdAt: row.createdAt,
     };
   });
@@ -249,7 +262,7 @@ export async function loadShareView(
     shareShow: game.shareShow,
     roundDownRefunds: preferences.roundDownRefunds,
     participants,
-    expenses,
+    expenses: expenses.map(({ shuttle: _shuttle, ...expense }) => expense),
     summary,
   };
 }

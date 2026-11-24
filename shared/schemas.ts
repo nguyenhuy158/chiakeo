@@ -1,9 +1,13 @@
 import { z } from "zod";
 import { isIsoDate } from "./played-dates";
 import {
+  DEFAULT_TUBE_QUANTITY,
+  MAX_SHUTTLE_PRICE,
   MAX_SHUTTLE_QUANTITY,
+  MAX_TUBE_QUANTITY,
   SHUTTLE_ENTRY_KINDS,
   SHUTTLE_NOTE_MAX_LENGTH,
+  SHUTTLE_TUBE_NAME_MAX_LENGTH,
 } from "./shuttles";
 
 export const GAME_NAME_MAX_LENGTH = 100;
@@ -253,6 +257,11 @@ export const expenseSplitInputSchema = z.object({
  */
 export const expenseKindSchema = z.enum(["expense", "income"]);
 
+export const expenseShuttleInputSchema = z.object({
+  tubeId: z.string().trim().min(1).max(ID_MAX_LENGTH),
+  quantity: z.number().int().min(1).max(MAX_SHUTTLE_QUANTITY),
+});
+
 export const expenseInputSchema = z.object({
   kind: expenseKindSchema.default("expense"),
   // Danh muc chi tieu; chuoi rong la chua phan loai. Danh muc la se bi
@@ -268,6 +277,7 @@ export const expenseInputSchema = z.object({
   // Mode "equal" dung splitParticipantIds; mode "shares"/"amount" dung splits.
   splitParticipantIds: z.array(z.string().min(1)).default([]),
   splits: z.array(expenseSplitInputSchema).default([]),
+  shuttle: expenseShuttleInputSchema.nullable().optional(),
 });
 
 export const transferInputSchema = z
@@ -337,6 +347,30 @@ export const shuttleEntryInputSchema = z.object({
   quantity: z.number().int().min(0).max(MAX_SHUTTLE_QUANTITY),
   note: z.string().trim().max(SHUTTLE_NOTE_MAX_LENGTH).default(""),
 });
+
+const shuttlePriceSchema = z.number().int().min(0).max(MAX_SHUTTLE_PRICE);
+const shuttleTubeNameSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .max(SHUTTLE_TUBE_NAME_MAX_LENGTH);
+const tubeQuantitySchema = z.number().int().min(1).max(MAX_TUBE_QUANTITY);
+
+export const shuttleTubeInputSchema = z.object({
+  name: shuttleTubeNameSchema,
+  tubePrice: shuttlePriceSchema.default(0),
+  shuttlePrice: shuttlePriceSchema.optional(),
+  initialQuantity: tubeQuantitySchema.default(DEFAULT_TUBE_QUANTITY),
+});
+
+export const shuttleTubeUpdateSchema = z
+  .object({
+    name: shuttleTubeNameSchema,
+    tubePrice: shuttlePriceSchema,
+    shuttlePrice: shuttlePriceSchema,
+    initialQuantity: tubeQuantitySchema,
+  })
+  .partial();
 
 /**
  * Tuy chon hien thi cua user, luu tren server de doi may/xoa cache van con.
@@ -426,6 +460,10 @@ export type PhotoUpdateInput = z.infer<typeof photoUpdateSchema>;
 export type McpScope = z.infer<typeof mcpScopeSchema>;
 export type McpTokenInput = z.input<typeof mcpTokenInputSchema>;
 export type ShuttleEntryInput = z.input<typeof shuttleEntryInputSchema>;
+export type ShuttleTubeInput = z.input<typeof shuttleTubeInputSchema>;
+export type ShuttleTubeCreate = z.infer<typeof shuttleTubeInputSchema>;
+export type ShuttleTubeUpdateInput = z.input<typeof shuttleTubeUpdateSchema>;
+export type ExpenseShuttleInput = z.infer<typeof expenseShuttleInputSchema>;
 export type UserPreferences = z.infer<typeof userPreferencesSchema>;
 export type UserPreferenceKey = keyof UserPreferences;
 export type UserPreferencesPatch = z.infer<typeof userPreferencesPatchSchema>;
