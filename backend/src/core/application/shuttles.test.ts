@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createFakeRepo, FAKE_OWNER } from "./fake-game-repository";
 import {
+  createLegacyShuttleEntry,
   createShuttleEntry,
   createShuttleTube,
   deleteShuttleEntry,
@@ -25,7 +26,11 @@ async function setup() {
 describe("shuttle tubes", () => {
   it("lists nothing before any tube exists", async () => {
     const { repo } = createFakeRepo();
-    expect(await listShuttleTubes(repo, FAKE_OWNER)).toEqual({ tubes: [] });
+    expect(await listShuttleTubes(repo, FAKE_OWNER)).toEqual({
+      stock: 0,
+      entries: [],
+      tubes: [],
+    });
   });
 
   it("creates a tube with the initial quantity as first stock entry", async () => {
@@ -292,5 +297,88 @@ describe("shuttle tube entries", () => {
     const view = await listShuttleTubes(repo, FAKE_OWNER);
     expect(view.tubes[0]?.entries).toHaveLength(50);
     expect(view.tubes[0]?.stock).toBe(72);
+  });
+});
+
+describe("legacy shuttle shape", () => {
+  it("sums stock and merges the newest entries across every tube", async () => {
+    const { repo, state } = await setup();
+    state.shuttleTubes[0]!.createdAt = "2026-01-01T00:00:00.000Z";
+    state.shuttleEntries[0]!.createdAt = "2026-01-01T00:00:00.000Z";
+    const second = await createShuttleTube(repo, FAKE_OWNER, {
+      ...TUBE_INPUT,
+      name: "B",
+      initialQuantity: 6,
+    });
+    const secondId = second.tubes.find((tube) => tube.name === "B")!.id;
+    await createShuttleEntry(repo, FAKE_OWNER, secondId, {
+      kind: "use",
+      quantity: 2,
+    });
+
+    const view = await listShuttleTubes(repo, FAKE_OWNER);
+
+    expect(view.stock).toBe(16);
+    expect(view.tubes).toHaveLength(2);
+    expect(
+      view.entries.map((entry) => [entry.delta, entry.stockAfter]),
+    ).toEqual([
+      [-2, 16],
+      [6, 18],
+      [12, 12],
+    ]);
+  });
+
+  it("reports one tube's stock and entries for a single tube", async () => {
+    const { repo } = await setup();
+    const view = await listShuttleTubes(repo, FAKE_OWNER);
+    expect(view.stock).toBe(12);
+    expect(view.entries).toHaveLength(1);
+    expect(view.tubes).toHaveLength(1);
+  });
+
+  it("creates Ống cầu 1 without an opening entry when there is no tube", async () => {
+    const { repo, state } = createFakeRepo();
+    const view = await createLegacyShuttleEntry(repo, FAKE_OWNER, {
+      kind: "add",
+      quantity: 5,
+    });
+    expect(state.shuttleTubes).toHaveLength(1);
+    expect(state.shuttleTubes[0]).toMatchObject({
+      name: "Ống cầu 1",
+      tubePrice: 0,
+      shuttlePrice: 0,
+      initialQuantity: 12,
+    });
+    expect(state.shuttleEntries).toHaveLength(1);
+    expect(view.stock).toBe(5);
+    expect(view.tubes[0]?.stock).toBe(5);
+  });
+
+  it("counts from zero and keeps the guards and the no-op rule", async () => {
+    const { repo, state } = createFakeRepo();
+    await expect(
+      createLegacyShuttleEntry(repo, FAKE_OWNER, { kind: "use", quantity: 1 }),
+    ).rejects.toThrow("shuttle_stock_negative");
+    const view = await createLegacyShuttleEntry(repo, FAKE_OWNER, {
+      kind: "set",
+      quantity: 0,
+    });
+    expect(view.stock).toBe(0);
+    expect(state.shuttleEntries).toHaveLength(0);
+  });
+
+  it("applies the entry to the oldest tube", async () => {
+    const { repo, state } = await setup();
+    state.shuttleTubes[0]!.createdAt = "2026-01-01T00:00:00.000Z";
+    await createShuttleTube(repo, FAKE_OWNER, { ...TUBE_INPUT, name: "B" });
+    const oldest = state.shuttleTubes[0]!;
+    const view = await createLegacyShuttleEntry(repo, FAKE_OWNER, {
+      kind: "use",
+      quantity: 2,
+    });
+    expect(view.stock).toBe(22);
+    expect(view.tubes.find((tube) => tube.id === oldest.id)?.stock).toBe(10);
+    expect(state.shuttleTubes).toHaveLength(2);
   });
 });

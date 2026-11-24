@@ -1,5 +1,6 @@
 import type {
   ApiShuttleEntry,
+  ApiShuttleStock,
   ApiShuttleTube,
   ApiShuttleTubes,
 } from "../../../../shared/api-types";
@@ -10,7 +11,9 @@ import type {
 } from "../../../../shared/schemas";
 import {
   computeShuttleStock,
+  DEFAULT_TUBE_QUANTITY,
   defaultShuttlePrice,
+  LEGACY_TUBE_NAME,
   SHUTTLE_ENTRY_LIST_LIMIT,
   type ShuttleEntryKind,
   shuttleDelta,
@@ -27,10 +30,7 @@ import { BadRequestError, InvalidInputError, NotFoundError } from "./errors";
 
 export const SHUTTLE_ENTRY_LINKED_ERROR = "shuttle_entry_linked_to_expense";
 
-function toTubeView(
-  tube: ShuttleTubeRow,
-  rows: ShuttleEntryRow[],
-): ApiShuttleTube {
+function toStockView(rows: ShuttleEntryRow[]): ApiShuttleStock {
   const entries: ApiShuttleEntry[] = [];
   let running = 0;
 
@@ -48,14 +48,23 @@ function toTubeView(
   }
 
   return {
+    stock: running,
+    entries: entries.reverse().slice(0, SHUTTLE_ENTRY_LIST_LIMIT),
+  };
+}
+
+function toTubeView(
+  tube: ShuttleTubeRow,
+  rows: ShuttleEntryRow[],
+): ApiShuttleTube {
+  return {
     id: tube.id,
     name: tube.name,
     tubePrice: tube.tubePrice,
     shuttlePrice: tube.shuttlePrice,
     initialQuantity: tube.initialQuantity,
-    stock: running,
     createdAt: tube.createdAt,
-    entries: entries.reverse().slice(0, SHUTTLE_ENTRY_LIST_LIMIT),
+    ...toStockView(rows),
   };
 }
 
@@ -69,6 +78,7 @@ export async function listShuttleTubes(
   ]);
 
   return {
+    ...toStockView(rows),
     tubes: tubes.map((tube) =>
       toTubeView(
         tube,
@@ -180,6 +190,28 @@ export async function createShuttleEntry(
   }
 
   return listShuttleTubes(repo, userId);
+}
+
+export async function createLegacyShuttleEntry(
+  repo: GameRepository,
+  userId: string,
+  input: ShuttleEntryInput,
+): Promise<ApiShuttleTubes> {
+  const tubes = await repo.shuttleTubes.listByOwner(userId);
+  let firstTube = tubes.at(-1);
+  if (!firstTube) {
+    firstTube = {
+      id: createId("tube"),
+      ownerUserId: userId,
+      name: LEGACY_TUBE_NAME,
+      tubePrice: 0,
+      shuttlePrice: 0,
+      initialQuantity: DEFAULT_TUBE_QUANTITY,
+      createdAt: nowIso(),
+    };
+    await repo.shuttleTubes.insert(firstTube);
+  }
+  return createShuttleEntry(repo, userId, firstTube.id, input);
 }
 
 export async function deleteShuttleEntry(

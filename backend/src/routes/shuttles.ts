@@ -5,6 +5,7 @@ import {
   shuttleTubeUpdateSchema,
 } from "../../../shared/schemas";
 import {
+  createLegacyShuttleEntry,
   createShuttleEntry,
   createShuttleTube,
   deleteShuttleEntry,
@@ -23,6 +24,15 @@ protectPaths(shuttlesRouter, "/shuttles", "/shuttles/*");
 shuttlesRouter.get("/shuttles", (c) =>
   respond(c, () => listShuttleTubes(c.get("repo"), c.get("userId"))),
 );
+
+shuttlesRouter.post("/shuttles/entries", async (c) => {
+  const input = await readJson(c, shuttleEntryInputSchema);
+  if (!input) return invalidInput(c);
+
+  return respond(c, () =>
+    createLegacyShuttleEntry(c.get("repo"), c.get("userId"), input),
+  );
+});
 
 shuttlesRouter.post("/shuttles/tubes", async (c) => {
   const input = await readJson(c, shuttleTubeInputSchema);

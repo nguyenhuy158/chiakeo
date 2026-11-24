@@ -109,8 +109,47 @@ describe("account level HTTP routes", () => {
     expect(fake.state.users[0].name).toBe("New");
   });
 
+  it("keeps the old shuttle stock routes working", async () => {
+    expect(
+      (
+        await request("POST", "/shuttles/entries", {
+          kind: "add",
+          quantity: -1,
+        })
+      ).status,
+    ).toBe(400);
+    const added = await request("POST", "/shuttles/entries", {
+      kind: "add",
+      quantity: 12,
+    });
+    expect(added.status).toBe(200);
+    expect(await added.json()).toMatchObject({
+      stock: 12,
+      entries: [{ delta: 12, stockAfter: 12 }],
+      tubes: [{ name: "Ống cầu 1", stock: 12 }],
+    });
+    const id = fake.state.shuttleEntries[0].id;
+    const removed = await request("DELETE", `/shuttles/entries/${id}`);
+    expect(await removed.json()).toMatchObject({ stock: 0, entries: [] });
+  });
+
+  it("refuses to delete an entry that belongs to an expense with a clear error", async () => {
+    await request("POST", "/shuttles/entries", { kind: "add", quantity: 5 });
+    fake.state.shuttleEntries[0].expenseId = "expense_1";
+    const response = await request(
+      "DELETE",
+      `/shuttles/entries/${fake.state.shuttleEntries[0].id}`,
+    );
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({
+      error: "shuttle_entry_linked_to_expense",
+    });
+  });
+
   it("creates, edits, uses and removes shuttle tubes over HTTP", async () => {
     expect(await (await request("GET", "/shuttles")).json()).toEqual({
+      stock: 0,
+      entries: [],
       tubes: [],
     });
     expect(
@@ -158,7 +197,7 @@ describe("account level HTTP routes", () => {
     expect(await removed.json()).toMatchObject({ tubes: [{ stock: 12 }] });
 
     const deleted = await request("DELETE", `/shuttles/tubes/${tubeId}`);
-    expect(await deleted.json()).toEqual({ tubes: [] });
+    expect(await deleted.json()).toEqual({ stock: 0, entries: [], tubes: [] });
     expect((await request("DELETE", `/shuttles/tubes/${tubeId}`)).status).toBe(
       404,
     );

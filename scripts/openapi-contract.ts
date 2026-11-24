@@ -49,6 +49,7 @@ export type Operation = {
   status?: number;
   access?: (typeof ACCESS)[keyof typeof ACCESS];
   form?: boolean;
+  deprecated?: boolean;
 };
 const { GET, POST, PATCH, DELETE } = HTTP_METHOD;
 const { CREATED } = HTTP_STATUS;
@@ -351,6 +352,13 @@ export const OPERATIONS: Operation[] = [
   { method: GET, path: "/api/cross-balances", response: "CrossBalances" },
   { method: GET, path: "/api/shuttles", response: "Shuttles" },
   { method: GET, path: "/api/preferences", response: "Preferences" },
+  {
+    method: POST,
+    path: "/api/shuttles/entries",
+    response: "Shuttles",
+    input: "shuttleEntryInputSchema",
+    deprecated: true,
+  },
   {
     method: POST,
     path: "/api/shuttles/tubes",

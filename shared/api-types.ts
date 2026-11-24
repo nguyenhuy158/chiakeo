@@ -280,7 +280,12 @@ export type ApiShuttleTube = {
   entries: ApiShuttleEntry[];
 };
 
-export type ApiShuttleTubes = {
+export type ApiShuttleStock = {
+  stock: number;
+  entries: ApiShuttleEntry[];
+};
+
+export type ApiShuttleTubes = ApiShuttleStock & {
   tubes: ApiShuttleTube[];
 };
 

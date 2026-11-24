@@ -4353,6 +4353,65 @@
         ]
       }
     },
+    "/api/shuttles/entries": {
+      "post": {
+        "operationId": "post__api_shuttles_entries",
+        "summary": "POST /api/shuttles/entries",
+        "description": "Application REST operation. Runtime Zod refinements and authorization remain authoritative.",
+        "tags": ["shuttles"],
+        "deprecated": true,
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/shuttleEntryInputSchema"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Shuttles"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request rejected or server error; error contains the application error code or message.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "SecureSessionCookie": []
+          },
+          {
+            "SsoCookie": []
+          },
+          {
+            "SsoBearer": []
+          },
+          {
+            "ApiToken": []
+          }
+        ]
+      }
+    },
     "/api/shuttles/tubes": {
       "post": {
         "operationId": "post__api_shuttles_tubes",
@@ -5312,6 +5371,146 @@
               }
             },
             "required": ["data"]
+          }
+        ]
+      },
+      "ApiShuttleTubes": {
+        "allOf": [
+          {
+            "type": "object",
+            "properties": {
+              "stock": {
+                "type": "number"
+              },
+              "entries": {
+                "type": "array",
+                "items": {
+                  "description": "Mot dong lich su kho cau, kem so cau con lai ngay sau thao tac do.",
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "kind": {
+                      "$ref": "#/components/schemas/ShuttleEntryKind"
+                    },
+                    "delta": {
+                      "description": "Thay doi thuc te len kho: am la bo ra, duong la them vao.",
+                      "type": "number"
+                    },
+                    "stockAfter": {
+                      "description": "Kho sau khi ap dong nay — server tinh san de FE khong phai cong don.",
+                      "type": "number"
+                    },
+                    "note": {
+                      "type": "string"
+                    },
+                    "expenseId": {
+                      "type": ["null", "string"]
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "createdAt",
+                    "delta",
+                    "expenseId",
+                    "id",
+                    "kind",
+                    "note",
+                    "stockAfter"
+                  ]
+                }
+              }
+            },
+            "required": ["entries", "stock"]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "tubes": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "tubePrice": {
+                      "type": "number"
+                    },
+                    "shuttlePrice": {
+                      "type": "number"
+                    },
+                    "initialQuantity": {
+                      "type": "number"
+                    },
+                    "stock": {
+                      "type": "number"
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    },
+                    "entries": {
+                      "type": "array",
+                      "items": {
+                        "description": "Mot dong lich su kho cau, kem so cau con lai ngay sau thao tac do.",
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "kind": {
+                            "$ref": "#/components/schemas/ShuttleEntryKind"
+                          },
+                          "delta": {
+                            "description": "Thay doi thuc te len kho: am la bo ra, duong la them vao.",
+                            "type": "number"
+                          },
+                          "stockAfter": {
+                            "description": "Kho sau khi ap dong nay — server tinh san de FE khong phai cong don.",
+                            "type": "number"
+                          },
+                          "note": {
+                            "type": "string"
+                          },
+                          "expenseId": {
+                            "type": ["null", "string"]
+                          },
+                          "createdAt": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "createdAt",
+                          "delta",
+                          "expenseId",
+                          "id",
+                          "kind",
+                          "note",
+                          "stockAfter"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "createdAt",
+                    "entries",
+                    "id",
+                    "initialQuantity",
+                    "name",
+                    "shuttlePrice",
+                    "stock",
+                    "tubePrice"
+                  ]
+                }
+              }
+            },
+            "required": ["tubes"]
           }
         ]
       },
@@ -6815,90 +7014,7 @@
         ]
       },
       "Shuttles": {
-        "type": "object",
-        "properties": {
-          "tubes": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "id": {
-                  "type": "string"
-                },
-                "name": {
-                  "type": "string"
-                },
-                "tubePrice": {
-                  "type": "number"
-                },
-                "shuttlePrice": {
-                  "type": "number"
-                },
-                "initialQuantity": {
-                  "type": "number"
-                },
-                "stock": {
-                  "type": "number"
-                },
-                "createdAt": {
-                  "type": "string"
-                },
-                "entries": {
-                  "type": "array",
-                  "items": {
-                    "description": "Mot dong lich su kho cau, kem so cau con lai ngay sau thao tac do.",
-                    "type": "object",
-                    "properties": {
-                      "id": {
-                        "type": "string"
-                      },
-                      "kind": {
-                        "$ref": "#/components/schemas/ShuttleEntryKind"
-                      },
-                      "delta": {
-                        "description": "Thay doi thuc te len kho: am la bo ra, duong la them vao.",
-                        "type": "number"
-                      },
-                      "stockAfter": {
-                        "description": "Kho sau khi ap dong nay — server tinh san de FE khong phai cong don.",
-                        "type": "number"
-                      },
-                      "note": {
-                        "type": "string"
-                      },
-                      "expenseId": {
-                        "type": ["null", "string"]
-                      },
-                      "createdAt": {
-                        "type": "string"
-                      }
-                    },
-                    "required": [
-                      "createdAt",
-                      "delta",
-                      "expenseId",
-                      "id",
-                      "kind",
-                      "note",
-                      "stockAfter"
-                    ]
-                  }
-                }
-              },
-              "required": [
-                "createdAt",
-                "entries",
-                "id",
-                "initialQuantity",
-                "name",
-                "shuttlePrice",
-                "stock",
-                "tubePrice"
-              ]
-            }
-          }
-        },
-        "required": ["tubes"]
+        "$ref": "#/components/schemas/ApiShuttleTubes"
       },
       "Preferences": {
         "type": "object",
@@ -7827,6 +7943,26 @@
         },
         "required": ["name", "scopes"]
       },
+      "shuttleEntryInputSchema": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": ["add", "use", "set"]
+          },
+          "quantity": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 999
+          },
+          "note": {
+            "default": "",
+            "type": "string",
+            "maxLength": 140
+          }
+        },
+        "required": ["kind", "quantity"]
+      },
       "shuttleTubeInputSchema": {
         "type": "object",
         "properties": {
@@ -7879,26 +8015,6 @@
             "maximum": 999
           }
         }
-      },
-      "shuttleEntryInputSchema": {
-        "type": "object",
-        "properties": {
-          "kind": {
-            "type": "string",
-            "enum": ["add", "use", "set"]
-          },
-          "quantity": {
-            "type": "integer",
-            "minimum": 0,
-            "maximum": 999
-          },
-          "note": {
-            "default": "",
-            "type": "string",
-            "maxLength": 140
-          }
-        },
-        "required": ["kind", "quantity"]
       },
       "userPreferencesPatchSchema": {
         "type": "object",

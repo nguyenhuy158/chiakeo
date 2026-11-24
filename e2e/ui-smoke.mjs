@@ -1039,6 +1039,14 @@ try {
   await cliRun("shuttle-tube-edit", "E2E tube", "--name", "E2E renamed");
   await cliRun("shuttle-tube-rm", "E2E renamed");
   assert.doesNotMatch(await cliRun("shuttles"), /E2E/);
+  await cliRun(
+    "api",
+    "POST",
+    "/api/shuttles/entries",
+    '{"kind":"add","quantity":3}',
+  );
+  assert.match(await cliRun("api", "GET", "/api/shuttles"), /"stock":\s*3/);
+  await cliRun("shuttle-tube-rm", "Ống cầu 1");
 
   assert.match(await cliRun("photos", "CLI Extra"), /No photos/);
   const pngCrc = (buffer) => {

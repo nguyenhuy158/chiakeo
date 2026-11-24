@@ -11,6 +11,7 @@ export const DEFAULT_TUBE_QUANTITY = 12;
 export const MAX_TUBE_QUANTITY = MAX_SHUTTLE_QUANTITY;
 export const MAX_SHUTTLE_PRICE = 100_000_000;
 export const SHUTTLE_CATEGORY_ID = "shuttle";
+export const LEGACY_TUBE_NAME = "Ống cầu 1";
 /** So dong lich su tra ve cho FE: du de doi chieu vai buoi gan nhat. */
 export const SHUTTLE_ENTRY_LIST_LIMIT = 50;
 
