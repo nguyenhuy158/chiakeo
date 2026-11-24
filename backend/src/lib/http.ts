@@ -3,6 +3,7 @@ import type { z } from "zod";
 import {
   AiProviderError,
   BadRequestError,
+  ForbiddenError,
   InvalidInputError,
   NotFoundError,
 } from "../core/application/errors";
@@ -41,6 +42,10 @@ export function invalidInput(c: Context) {
   return badRequest(c, "invalid_input");
 }
 
+export function forbidden(c: Context) {
+  return c.json({ error: "forbidden" }, 403);
+}
+
 export function notFound(c: Context) {
   return c.json({ error: "not_found" }, 404);
 }
@@ -65,6 +70,7 @@ export async function respond<T>(
   } catch (error) {
     if (error instanceof NotFoundError) return notFound(c);
     if (error instanceof InvalidInputError) return invalidInput(c);
+    if (error instanceof ForbiddenError) return forbidden(c);
     if (error instanceof BadRequestError) return badRequest(c, error.code);
     if (error instanceof AiProviderError) {
       return c.json({ error: error.code }, AI_ERROR_STATUS[error.code] || 502);

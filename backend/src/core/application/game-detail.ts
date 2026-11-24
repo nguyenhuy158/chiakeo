@@ -241,9 +241,16 @@ export async function loadGameDetail(
     isOwner: game.ownerUserId === userId,
     collaborators,
     participants: data.participants,
-    expenses: data.expenses,
+    expenses:
+      game.ownerUserId === userId
+        ? data.expenses
+        : withoutShuttleLinks(data.expenses),
     summary: data.summary,
   };
+}
+
+function withoutShuttleLinks(expenses: ApiExpense[]) {
+  return expenses.map(({ shuttle: _shuttle, ...expense }) => expense);
 }
 
 export async function loadShareView(
@@ -262,7 +269,7 @@ export async function loadShareView(
     shareShow: game.shareShow,
     roundDownRefunds: preferences.roundDownRefunds,
     participants,
-    expenses: expenses.map(({ shuttle: _shuttle, ...expense }) => expense),
+    expenses: withoutShuttleLinks(expenses),
     summary,
   };
 }

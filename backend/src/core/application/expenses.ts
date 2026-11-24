@@ -15,7 +15,7 @@ import {
 } from "../../../../shared/split";
 import { createId, nowIso } from "../../lib/ids";
 import type { GameRepository } from "../ports/game-repository";
-import { InvalidInputError, NotFoundError } from "./errors";
+import { ForbiddenError, InvalidInputError, NotFoundError } from "./errors";
 import {
   assertShuttleStock,
   carriesShuttle,
@@ -112,6 +112,7 @@ export async function addExpense(
 
   const shuttle = input.shuttle ?? null;
   if (shuttle) {
+    if (userId !== game.ownerUserId) throw new ForbiddenError();
     if (!carriesShuttle(input.kind, normalizeCategory(input.category))) {
       throw new InvalidInputError();
     }
@@ -214,6 +215,8 @@ export async function updateExpense(
       ? normalizeCategory(row.expense.category)
       : normalizeCategory(input.category);
 
+  const isOwner = row.game.ownerUserId === userId;
+  if (input.shuttle && !isOwner) throw new ForbiddenError();
   const currentShuttle = await findExpenseShuttle(repo, row.expense.id);
   const requestedShuttle =
     input.shuttle === undefined ? currentShuttle : input.shuttle;
@@ -243,7 +246,10 @@ export async function updateExpense(
     row.expense.id,
     toNewSplitRows(row.expense.id, rows),
   );
-  if (input.shuttle !== undefined || (currentShuttle && !shuttle)) {
+  if (
+    isOwner &&
+    (input.shuttle !== undefined || (currentShuttle && !shuttle))
+  ) {
     await writeExpenseShuttle(
       repo,
       row.game.ownerUserId,

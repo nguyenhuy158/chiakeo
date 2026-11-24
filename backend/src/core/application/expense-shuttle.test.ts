@@ -165,22 +165,90 @@ describe("shuttle expenses", () => {
     expect(stockOf(fake.state, fake.tubeId)).toBe(12);
   });
 
-  it("validates a collaborator's tube against the game owner", async () => {
-    fake.state.games = [gameRow({ ownerUserId: FAKE_OWNER })];
-    fake.state.collaborators.push({
-      gameId: FAKE_GAME_ID,
-      userId: COLLABORATOR,
-      createdAt: "2026-08-01T00:00:00.000Z",
-    } as never);
-    await addExpense(
-      fake.repo,
-      COLLABORATOR,
-      FAKE_GAME_ID,
-      expenseInput({ shuttle: { tubeId: fake.tubeId, quantity: 1 } }),
-    );
-    expect(fake.state.shuttleEntries.at(-1)).toMatchObject({
-      ownerUserId: FAKE_OWNER,
-      delta: -1,
+  describe("as a collaborator", () => {
+    beforeEach(() => {
+      fake.state.collaborators.push({
+        gameId: FAKE_GAME_ID,
+        userId: COLLABORATOR,
+        createdAt: "2026-08-01T00:00:00.000Z",
+      } as never);
+    });
+
+    it("cannot add an expense with a tube", async () => {
+      await expect(
+        addExpense(
+          fake.repo,
+          COLLABORATOR,
+          FAKE_GAME_ID,
+          expenseInput({ shuttle: { tubeId: fake.tubeId, quantity: 1 } }),
+        ),
+      ).rejects.toThrow("forbidden");
+      expect(fake.state.expenses).toHaveLength(0);
+      expect(stockOf(fake.state, fake.tubeId)).toBe(12);
+    });
+
+    it("adds a plain expense, treating a null tube as not provided", async () => {
+      await addExpense(
+        fake.repo,
+        COLLABORATOR,
+        FAKE_GAME_ID,
+        expenseInput({ shuttle: null }),
+      );
+      expect(fake.state.expenses).toHaveLength(1);
+      expect(stockOf(fake.state, fake.tubeId)).toBe(12);
+    });
+
+    it("cannot link or change a tube on update", async () => {
+      await addExpense(
+        fake.repo,
+        FAKE_OWNER,
+        FAKE_GAME_ID,
+        expenseInput({ shuttle: { tubeId: fake.tubeId, quantity: 2 } }),
+      );
+      const expenseId = fake.state.expenses[0]!.id;
+      await expect(
+        updateExpense(fake.repo, COLLABORATOR, expenseId, {
+          shuttle: { tubeId: fake.tubeId, quantity: 5 },
+        }),
+      ).rejects.toThrow("forbidden");
+      expect(stockOf(fake.state, fake.tubeId)).toBe(10);
+    });
+
+    it("keeps the link and stock when editing other fields, even the category or a null tube", async () => {
+      await addExpense(
+        fake.repo,
+        FAKE_OWNER,
+        FAKE_GAME_ID,
+        expenseInput({ shuttle: { tubeId: fake.tubeId, quantity: 2 } }),
+      );
+      const expenseId = fake.state.expenses[0]!.id;
+      await updateExpense(fake.repo, COLLABORATOR, expenseId, {
+        amount: 70_000,
+      });
+      await updateExpense(fake.repo, COLLABORATOR, expenseId, {
+        category: "food",
+        shuttle: null,
+      });
+      expect(stockOf(fake.state, fake.tubeId)).toBe(10);
+      expect(
+        fake.state.shuttleEntries.filter((row) => row.expenseId === expenseId),
+      ).toHaveLength(1);
+    });
+
+    it("returns the stock when it deletes the expense and sees no tube in the detail", async () => {
+      await addExpense(
+        fake.repo,
+        FAKE_OWNER,
+        FAKE_GAME_ID,
+        expenseInput({ shuttle: { tubeId: fake.tubeId, quantity: 2 } }),
+      );
+      const expenseId = fake.state.expenses[0]!.id;
+      const detail = await updateExpense(fake.repo, COLLABORATOR, expenseId, {
+        amount: 1,
+      });
+      expect(detail.expenses[0]).not.toHaveProperty("shuttle");
+      await removeExpense(fake.repo, COLLABORATOR, expenseId);
+      expect(stockOf(fake.state, fake.tubeId)).toBe(12);
     });
   });
 

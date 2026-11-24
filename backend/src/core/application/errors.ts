@@ -6,6 +6,12 @@ export class NotFoundError extends Error {
   }
 }
 
+export class ForbiddenError extends Error {
+  constructor() {
+    super("forbidden");
+  }
+}
+
 export class InvalidInputError extends Error {
   constructor() {
     super("invalid_input");

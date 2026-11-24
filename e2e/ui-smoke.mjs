@@ -1433,7 +1433,7 @@ try {
 
   await page.goto(`${BASE}/shuttles`);
   await page
-    .getByRole("button", { name: "Dùng 1 trái" })
+    .getByRole("button", { name: "Thêm ống" })
     .waitFor({ state: "visible", ...WAIT });
   assert.equal(await scrolls(), false, "kho cau cuon duoc tren dien thoai");
   await page.goto(`${BASE}/fun`);
