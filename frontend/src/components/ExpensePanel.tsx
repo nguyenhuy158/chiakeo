@@ -48,6 +48,10 @@ import {
   type SplitMode,
   type TransferInput,
 } from "../../../shared/schemas";
+import {
+  MAX_SHUTTLE_QUANTITY,
+  SHUTTLE_CATEGORY_ID,
+} from "../../../shared/shuttles";
 import { allocateAmount, allocateByWeights } from "../../../shared/split";
 import { usePhotoUploader } from "../adapters/react-query/photo-upload";
 import {
@@ -55,6 +59,11 @@ import {
   useAiSuggestExpense,
 } from "../adapters/react-query/queries";
 import { formatMoney, parseMoney } from "../core/domain/money";
+import {
+  EXPENSE_SHUTTLE_STOCK_MESSAGE,
+  SHUTTLE_STOCK_NEGATIVE,
+  shuttleErrorCode,
+} from "../core/domain/shuttle-errors";
 import { Menu } from "../ui/Menu";
 import { PagedList } from "../ui/PagedList";
 import { AdaptiveSheet } from "./AdaptiveSheet";
@@ -62,6 +71,7 @@ import { AdaptiveSheet } from "./AdaptiveSheet";
 import { Dropdown } from "./Dropdown";
 import { MoneyInput } from "./MoneyInput";
 import { PhotoPickerButton } from "./PhotoPanel";
+import { ShuttleExpenseFields } from "./ShuttleExpenseFields";
 import { DRAG_HANDLE_CLASS, SortableItem, SortableList } from "./sortable";
 import { Field } from "./ui";
 import { usePhotoViewer } from "./use-photo-viewer";
@@ -92,8 +102,29 @@ const expenseFormSchema = z
       .min(1, "Chọn ít nhất một người cùng chia"),
     // Gia tri nhap theo tung nguoi: so phan (shares) hoac so tien (amount).
     splitValues: z.record(z.string(), z.string()),
+    shuttleTubeId: z.string(),
+    shuttleQuantity: z.string(),
   })
   .superRefine((values, ctx) => {
+    if (
+      values.kind === "expense" &&
+      values.category === SHUTTLE_CATEGORY_ID &&
+      values.shuttleTubeId
+    ) {
+      const quantity = Number(values.shuttleQuantity);
+      if (
+        !Number.isInteger(quantity) ||
+        quantity < 1 ||
+        quantity > MAX_SHUTTLE_QUANTITY
+      ) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["shuttleQuantity"],
+          message: `Nhập số trái từ 1 đến ${MAX_SHUTTLE_QUANTITY}`,
+        });
+      }
+    }
+
     if (values.kind === "transfer") {
       if (!values.toId) {
         ctx.addIssue({
@@ -154,6 +185,19 @@ const expenseFormSchema = z
 
 type ExpenseFormValues = z.infer<typeof expenseFormSchema>;
 
+function linkedShuttle(values: ExpenseFormValues) {
+  const carriesShuttle =
+    values.kind === "expense" &&
+    values.category === SHUTTLE_CATEGORY_ID &&
+    values.shuttleTubeId;
+  return carriesShuttle
+    ? {
+        tubeId: values.shuttleTubeId,
+        quantity: Number(values.shuttleQuantity),
+      }
+    : null;
+}
+
 const SPLIT_MODE_OPTIONS: Array<{ id: SplitMode; label: string }> = [
   { id: "equal", label: "Chia đều" },
   { id: "shares", label: "Theo phần" },
@@ -197,6 +241,7 @@ type ExpensePanelProps = {
   onAddTransfer: (input: TransferInput) => Promise<unknown>;
   onReorder: (expenseIds: string[]) => void;
   compact?: boolean;
+  isOwner?: boolean;
 };
 
 const AI_ERROR_MESSAGES: Record<string, string> = {
@@ -368,6 +413,7 @@ export function ExpensePanel({
   onAddTransfer,
   onReorder,
   compact = false,
+  isOwner = false,
 }: ExpensePanelProps) {
   const participantById = new Map(
     participants.map((participant) => [participant.id, participant]),
@@ -389,6 +435,8 @@ export function ExpensePanel({
       splitMode: "equal",
       splitParticipantIds: participants.map((participant) => participant.id),
       splitValues: {},
+      shuttleTubeId: "",
+      shuttleQuantity: "",
     },
   });
 
@@ -655,6 +703,8 @@ export function ExpensePanel({
       splitMode: expense.splitMode,
       splitParticipantIds: expense.splitParticipantIds,
       splitValues: values,
+      shuttleTubeId: expense.shuttle?.tubeId ?? "",
+      shuttleQuantity: expense.shuttle ? String(expense.shuttle.quantity) : "",
     });
   }
 
@@ -673,6 +723,8 @@ export function ExpensePanel({
       splitMode: "equal",
       splitParticipantIds: participants.map((participant) => participant.id),
       splitValues: {},
+      shuttleTubeId: "",
+      shuttleQuantity: "",
     });
   }
 
@@ -700,6 +752,8 @@ export function ExpensePanel({
         splitMode: values.splitMode,
         splitParticipantIds: values.splitParticipantIds,
         splitValues: {},
+        shuttleTubeId: "",
+        shuttleQuantity: "",
       });
       return;
     }
@@ -730,6 +784,7 @@ export function ExpensePanel({
                   : parseMoney(values.splitValues[participantId]),
             })),
     };
+    if (isOwner) input.shuttle = linkedShuttle(values);
 
     try {
       if (editingExpenseId) {
@@ -746,8 +801,12 @@ export function ExpensePanel({
         editingExpenseId ? "Đã lưu khoản chi" : "Đã thêm khoản chi",
       );
       setFormOpen(false);
-    } catch {
-      toast.error("Không lưu được khoản chi");
+    } catch (error) {
+      toast.error(
+        shuttleErrorCode(error) === SHUTTLE_STOCK_NEGATIVE
+          ? EXPENSE_SHUTTLE_STOCK_MESSAGE
+          : "Không lưu được khoản chi",
+      );
       return;
     }
 
@@ -764,6 +823,8 @@ export function ExpensePanel({
       splitMode: values.splitMode,
       splitParticipantIds: values.splitParticipantIds,
       splitValues: {},
+      shuttleTubeId: values.shuttleTubeId,
+      shuttleQuantity: "",
     });
   });
 
@@ -932,6 +993,26 @@ export function ExpensePanel({
             })}
           </div>
         </div>
+        {isOwner && kind === "expense" && category === SHUTTLE_CATEGORY_ID && (
+          <ShuttleExpenseFields
+            tubeId={form.watch("shuttleTubeId")}
+            quantity={form.watch("shuttleQuantity")}
+            original={
+              expenses.find((expense) => expense.id === editingExpenseId)
+                ?.shuttle ?? null
+            }
+            error={form.formState.errors.shuttleQuantity?.message}
+            onChange={(next) => {
+              form.setValue("shuttleTubeId", next.tubeId);
+              form.setValue("shuttleQuantity", next.quantity, {
+                shouldValidate: form.formState.isSubmitted,
+              });
+              if (next.amount !== null) {
+                form.setValue("amount", String(next.amount));
+              }
+            }}
+          />
+        )}
         <Field label="Số tiền" error={form.formState.errors.amount?.message}>
           <Controller
             control={form.control}

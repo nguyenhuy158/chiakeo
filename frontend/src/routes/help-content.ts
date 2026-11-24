@@ -238,7 +238,7 @@ export const HELP_GROUPS: HelpGroup[] = [
         title: "Các nút trên header",
         steps: [
           "Logo: về trang chủ, xem các khoản cần tất toán gộp từ nhiều cuộc.",
-          "Kho cầu: ghi số cầu nhập vào hoặc đã dùng, có lịch sử, không cho kho âm hoặc vượt trần.",
+          "Kho cầu: mỗi ống cầu có giá ống, giá mỗi trái và số trái còn lại; ghi cầu nhập vào hoặc đã dùng, có lịch sử, không cho kho âm hoặc vượt trần. Khoản chi danh mục Cầu có thể trừ thẳng vào một ống.",
           "Thống kê vui: tổng chi, người trả nhiều nhất, khoản chi lớn nhất và ngày hay chơi nhất, gộp các cuộc đang chơi.",
           "Cài đặt: đổi tên hiển thị, các tùy chọn hiển thị và tạo token MCP để dùng với Claude.",
           "Nút ☀: đổi giao diện sáng hoặc tối. Nút Thoát: đăng xuất.",
