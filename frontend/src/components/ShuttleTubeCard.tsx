@@ -237,11 +237,12 @@ export function ShuttleTubeCard({
           inputMode="numeric"
           placeholder="Đếm lại · vd 8"
           aria-label={`Chốt lại số cầu của ${tube.name}`}
-          className="w-36"
+          className="min-w-0 flex-1"
         />
         <Button
           type="submit"
           variant="outline"
+          className="shrink-0 whitespace-nowrap"
           disabled={pending || countDraft === ""}
           leftIcon={<Check size={ICON_SIZE_PX} />}
         >
