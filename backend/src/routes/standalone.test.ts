@@ -109,29 +109,59 @@ describe("account level HTTP routes", () => {
     expect(fake.state.users[0].name).toBe("New");
   });
 
-  it("creates, reads and removes a shuttle stock entry", async () => {
-    const empty = await request("GET", "/shuttles");
-    expect(await empty.json()).toEqual({ stock: 0, entries: [] });
+  it("creates, edits, uses and removes shuttle tubes over HTTP", async () => {
+    expect(await (await request("GET", "/shuttles")).json()).toEqual({
+      tubes: [],
+    });
+    expect(
+      (await request("POST", "/shuttles/tubes", { name: " " })).status,
+    ).toBe(400);
+    const created = await request("POST", "/shuttles/tubes", {
+      name: "Ống A",
+      tubePrice: 240_000,
+    });
+    expect(created.status).toBe(201);
+    const { tubes } = (await created.json()) as {
+      tubes: { id: string; stock: number; shuttlePrice: number }[];
+    };
+    expect(tubes[0]).toMatchObject({ stock: 12, shuttlePrice: 20_000 });
+    const tubeId = tubes[0].id;
+
     expect(
       (
-        await request("POST", "/shuttles/entries", {
+        await request("POST", `/shuttles/tubes/${tubeId}/entries`, {
           kind: "add",
           quantity: -1,
         })
       ).status,
     ).toBe(400);
-    const added = await request("POST", "/shuttles/entries", {
-      kind: "add",
-      quantity: 12,
+    const used = await request("POST", `/shuttles/tubes/${tubeId}/entries`, {
+      kind: "use",
+      quantity: 2,
     });
-    expect(added.status).toBe(200);
-    expect(await added.json()).toMatchObject({ stock: 12 });
-    expect(fake.state.shuttleEntries).toHaveLength(1);
-    const id = fake.state.shuttleEntries[0].id;
-    expect((await request("GET", "/shuttles")).status).toBe(200);
-    const removed = await request("DELETE", `/shuttles/entries/${id}`);
-    expect(removed.status).toBe(200);
-    expect(await removed.json()).toEqual({ stock: 0, entries: [] });
+    expect(used.status).toBe(200);
+    expect(await used.json()).toMatchObject({ tubes: [{ stock: 10 }] });
+
+    expect(
+      (await request("PATCH", `/shuttles/tubes/${tubeId}`, { name: "" }))
+        .status,
+    ).toBe(400);
+    const renamed = await request("PATCH", `/shuttles/tubes/${tubeId}`, {
+      name: "Ống B",
+    });
+    expect(await renamed.json()).toMatchObject({ tubes: [{ name: "Ống B" }] });
+
+    const entryId = fake.state.shuttleEntries.find(
+      (row) => row.kind === "use",
+    )!.id;
+    const removed = await request("DELETE", `/shuttles/entries/${entryId}`);
+    expect(await removed.json()).toMatchObject({ tubes: [{ stock: 12 }] });
+
+    const deleted = await request("DELETE", `/shuttles/tubes/${tubeId}`);
+    expect(await deleted.json()).toEqual({ tubes: [] });
+    expect((await request("DELETE", `/shuttles/tubes/${tubeId}`)).status).toBe(
+      404,
+    );
   });
 
   it("validates, saves, and reads user preferences", async () => {

@@ -40,7 +40,7 @@ shared/                        # Pure domain kernel shared by FE + worker (no IO
   photos.ts                    #   Photo helpers (counts, viewer index, data URI)
   api-types.ts                 #   DTOs exchanged between FE and worker
   rate-limit.ts                #   Pure rate-limit logic
-  shuttles.ts                  #   Kho cau: cong tru so cau, chan kho am/vuot tran
+  shuttles.ts                  #   Kho cau nhieu ong: cong tru so cau, gia mot trai, chan kho am/vuot tran
   game-closing.ts              #   Dong cuoc choi: auto khi tra xong / dong tay
   vietqr.ts                    #   VietQR URL building (worker proxies QR too)
   summary-text.ts              #   Summary document for copy-as-text/image
@@ -70,7 +70,7 @@ backend/src/                    # Backend hexagon (Hono on Cloudflare Worker)
   core/
     ports/game-repository.ts   #   Storage port (row types + interface)
     ports/ai-provider.ts       #   AI JSON-generation port
-    application/               #   Use cases + policies (ownership, realloc, ...)
+    application/               #   Use cases + policies (ownership, realloc, shuttle tubes, expense-shuttle link, ...)
   adapters/
     d1/schema.ts               #   Drizzle schema (drizzle-kit source)
     d1/game-repository.ts      #   D1/drizzle adapter for GameRepository
@@ -81,7 +81,7 @@ backend/src/                    # Backend hexagon (Hono on Cloudflare Worker)
   auth.ts  env.ts  index.ts    #   Better Auth, Env type, app + middleware
   sso.ts  sso-user.ts          #   SSO cookie (RS256, JWKS) -> app user
 
-drizzle/                       # Generated D1 migrations (wrangler migrations_dir)
+drizzle-shared/                # Generated migrations (wrangler migrations_dir, prod via migrate.yml); drizzle/ is the older D1-only history
 scripts/                       # build-info.mjs (commit stamp)
 docs/                          # architecture.md, screenshots/
 e2e/                           # E2E (Playwright + wrangler dev), plumbing from @huyab/e2e

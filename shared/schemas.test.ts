@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
   defaultTitleForKind,
+  expenseInputSchema,
   gameInputSchema,
   gameUpdateSchema,
+  shuttleTubeInputSchema,
+  shuttleTubeUpdateSchema,
   transferInputSchema,
 } from "./schemas";
 
@@ -121,4 +124,56 @@ it("validates account lists before saving", async () => {
       })),
     }).success,
   ).toBe(false);
+});
+
+describe("shuttle tube schemas", () => {
+  it("fills a new tube with 12 shuttles and no price", () => {
+    expect(shuttleTubeInputSchema.parse({ name: "  Ống A " })).toEqual({
+      name: "Ống A",
+      tubePrice: 0,
+      initialQuantity: 12,
+    });
+  });
+
+  it("rejects an empty name, a zero quantity and a negative price", () => {
+    expect(() => shuttleTubeInputSchema.parse({ name: " " })).toThrow();
+    expect(() =>
+      shuttleTubeInputSchema.parse({ name: "A", initialQuantity: 0 }),
+    ).toThrow();
+    expect(() =>
+      shuttleTubeInputSchema.parse({ name: "A", tubePrice: -1 }),
+    ).toThrow();
+  });
+
+  it("does not add defaults to a partial tube update", () => {
+    expect(shuttleTubeUpdateSchema.parse({ shuttlePrice: 5000 })).toEqual({
+      shuttlePrice: 5000,
+    });
+  });
+});
+
+describe("expense shuttle link", () => {
+  const base = { amount: 1000, payerParticipantId: "p1" };
+
+  it("accepts a tube link, null and no link", () => {
+    expect(
+      expenseInputSchema.parse({
+        ...base,
+        shuttle: { tubeId: "tube_1", quantity: 2 },
+      }).shuttle,
+    ).toEqual({ tubeId: "tube_1", quantity: 2 });
+    expect(expenseInputSchema.parse({ ...base, shuttle: null }).shuttle).toBe(
+      null,
+    );
+    expect(expenseInputSchema.parse(base).shuttle).toBeUndefined();
+  });
+
+  it("rejects a zero quantity", () => {
+    expect(() =>
+      expenseInputSchema.parse({
+        ...base,
+        shuttle: { tubeId: "tube_1", quantity: 0 },
+      }),
+    ).toThrow();
+  });
 });

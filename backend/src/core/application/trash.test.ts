@@ -57,6 +57,7 @@ function stubRepo(rows: GameRow[]) {
     participants: { listByGame: async () => [] },
     expenses: { listByGame: async () => [] },
     splits: { listByExpenseIds: async () => [] },
+    shuttleEntries: { listByExpenseIds: async () => [] },
     paymentProfiles: { listByParticipantIds: async () => [] },
     photos: { countByGame: async () => 0 },
     shareLinks: { getLatestByGame: async () => null },

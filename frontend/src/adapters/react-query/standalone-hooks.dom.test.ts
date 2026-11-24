@@ -22,8 +22,11 @@ import {
 import {
   shuttleKeys,
   useCreateShuttleEntry,
+  useCreateShuttleTube,
   useDeleteShuttleEntry,
-  useShuttleStock,
+  useDeleteShuttleTube,
+  useShuttleTubes,
+  useUpdateShuttleTube,
 } from "./shuttles-query";
 
 let host: HTMLDivElement;
@@ -122,31 +125,83 @@ describe("standalone React Query hooks", () => {
     expect(client.getQueryData(bundleKeys.detail("b"))).toEqual(detail);
   });
 
-  it("writes shuttle creation and deletion results straight into cache", async () => {
-    const first = { entries: [{ id: "one" }] };
-    const empty = { entries: [] };
+  it("writes every shuttle tube result straight into cache", async () => {
+    const empty = { tubes: [] };
+    const one = { tubes: [{ id: "tube" }] };
+    const renamed = { tubes: [{ id: "tube", name: "B" }] };
+    const withEntry = { tubes: [{ id: "tube", stock: 11 }] };
     const get = vi.fn().mockResolvedValue(empty);
-    const createEntry = vi.fn().mockResolvedValue(first);
-    const removeEntry = vi.fn().mockResolvedValue(empty);
+    const createTube = vi.fn().mockResolvedValue(one);
+    const updateTube = vi.fn().mockResolvedValue(renamed);
+    const createEntry = vi.fn().mockResolvedValue(withEntry);
+    const removeEntry = vi.fn().mockResolvedValue(one);
+    const removeTube = vi.fn().mockResolvedValue(empty);
     provideGameApi({
-      shuttles: { get, createEntry, removeEntry },
+      shuttles: {
+        get,
+        createTube,
+        updateTube,
+        createEntry,
+        removeEntry,
+        removeTube,
+      },
     } as unknown as GameApiPort);
     const current = mount(() => ({
-      stock: useShuttleStock(),
+      tubes: useShuttleTubes(),
+      createTube: useCreateShuttleTube(),
+      updateTube: useUpdateShuttleTube(),
+      removeTube: useDeleteShuttleTube(),
       create: useCreateShuttleEntry(),
       remove: useDeleteShuttleEntry(),
     }));
-    await vi.waitFor(() => expect(current().stock.data).toEqual(empty));
+    await vi.waitFor(() => expect(current().tubes.data).toEqual(empty));
+
     await act(async () => {
-      await current().create.mutateAsync({} as never);
+      await current().createTube.mutateAsync({ name: "A" });
     });
-    expect(createEntry).toHaveBeenCalledWith({});
-    expect(client.getQueryData(shuttleKeys.all)).toEqual(first);
+    expect(createTube).toHaveBeenCalledWith({ name: "A" });
+    expect(client.getQueryData(shuttleKeys.all)).toEqual(one);
+
     await act(async () => {
-      await current().remove.mutateAsync("one");
+      await current().updateTube.mutateAsync({
+        tubeId: "tube",
+        input: { name: "B" },
+      });
     });
-    expect(removeEntry).toHaveBeenCalledWith("one");
+    expect(updateTube).toHaveBeenCalledWith("tube", { name: "B" });
+    expect(client.getQueryData(shuttleKeys.all)).toEqual(renamed);
+
+    await act(async () => {
+      await current().create.mutateAsync({
+        tubeId: "tube",
+        input: { kind: "add", quantity: 1 },
+      });
+    });
+    expect(createEntry).toHaveBeenCalledWith("tube", {
+      kind: "add",
+      quantity: 1,
+    });
+    expect(client.getQueryData(shuttleKeys.all)).toEqual(withEntry);
+
+    await act(async () => {
+      await current().remove.mutateAsync("entry");
+    });
+    expect(removeEntry).toHaveBeenCalledWith("entry");
+    expect(client.getQueryData(shuttleKeys.all)).toEqual(one);
+
+    await act(async () => {
+      await current().removeTube.mutateAsync("tube");
+    });
+    expect(removeTube).toHaveBeenCalledWith("tube");
     expect(client.getQueryData(shuttleKeys.all)).toEqual(empty);
+  });
+
+  it("does not fetch tubes while the query is disabled", async () => {
+    const get = vi.fn().mockResolvedValue({ tubes: [] });
+    provideGameApi({ shuttles: { get } } as unknown as GameApiPort);
+    mount(() => useShuttleTubes({ enabled: false }));
+    await act(async () => {});
+    expect(get).not.toHaveBeenCalled();
   });
 
   it("loads merged session and updates the cached user name", async () => {
