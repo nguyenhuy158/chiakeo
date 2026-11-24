@@ -106,8 +106,9 @@ How this repo fits with the other `*.huyab.cfd` apps:
   `backend/src/sso.ts` is still the local verifier.
 - Talks to: `sso` (auth.huyab.cfd: `huyab_sso` JWT verified against its
   JWKS) and `mailer` (`MAILER` service binding, `POST /send`).
-- Called by: `chia-keo-ios` (same API with the SSO JWT), Claude MCP clients
-  (`/api/mcp`), and `huyabhome` (uptime ping).
+- Called by: `home` (Tauri iOS app, Chia kèo tabs; same API with the SSO JWT;
+  it replaces the archived `chia-keo-ios`), Claude MCP clients (`/api/mcp`),
+  and `huyabhome` (uptime ping).
 
 ## Build, Test, and Development Commands
 
