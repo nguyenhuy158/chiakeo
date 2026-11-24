@@ -164,15 +164,50 @@ describe("D1 game repository", () => {
     ]);
     expect(await repo.userPreferences.listByUser("friend")).toEqual([]);
 
+    const tube = {
+      id: "tube-d1",
+      ownerUserId: "owner",
+      name: "Ống A",
+      tubePrice: 360_000,
+      shuttlePrice: 30_000,
+      initialQuantity: 12,
+      createdAt: now,
+    };
+    await repo.shuttleTubes.insert(tube);
+    await repo.shuttleTubes.insert({
+      ...tube,
+      id: "tube-d1-newer",
+      name: "Ống B",
+      createdAt: "2026-07-02T00:00:00.000Z",
+    });
+    expect(await repo.shuttleTubes.getOwned(tube.id, "friend")).toBeNull();
+    expect(await repo.shuttleTubes.getOwned(tube.id, "owner")).toEqual(tube);
+    expect(
+      (await repo.shuttleTubes.listByOwner("owner")).map((row) => row.id),
+    ).toEqual(["tube-d1-newer", "tube-d1"]);
+    await repo.shuttleTubes.update(tube.id, { name: "Ống mới", tubePrice: 1 });
+    expect(await repo.shuttleTubes.getOwned(tube.id, "owner")).toMatchObject({
+      name: "Ống mới",
+      tubePrice: 1,
+      shuttlePrice: 30_000,
+    });
+
     const entry = {
       id: "shuttle-d1",
       ownerUserId: "owner",
+      tubeId: tube.id,
+      expenseId: null,
       kind: "add" as const,
       delta: 3,
       note: "Mua cầu",
       createdAt: now,
     };
     await repo.shuttleEntries.insert(entry);
+    await repo.shuttleEntries.insert({
+      ...entry,
+      id: "shuttle-d1-other",
+      tubeId: "tube-d1-newer",
+    });
     expect(await repo.shuttleEntries.getOwned(entry.id, "friend")).toBeNull();
     expect(await repo.shuttleEntries.getOwned(entry.id, "owner")).toMatchObject(
       entry,
@@ -180,8 +215,108 @@ describe("D1 game repository", () => {
     expect(
       (await repo.shuttleEntries.listByOwner("owner")).map((row) => row.id),
     ).toContain(entry.id);
+    expect(
+      (await repo.shuttleEntries.listByTube(tube.id)).map((row) => row.id),
+    ).toEqual([entry.id]);
+    expect(await repo.shuttleEntries.listByExpenseIds([])).toEqual([]);
     await repo.shuttleEntries.delete(entry.id);
     expect(await repo.shuttleEntries.getOwned(entry.id, "owner")).toBeNull();
+
+    await repo.shuttleEntries.insert({ ...entry, id: "shuttle-d1-again" });
+    await repo.shuttleTubes.delete(tube.id);
+    expect(await repo.shuttleTubes.getOwned(tube.id, "owner")).toBeNull();
+    expect(await repo.shuttleEntries.listByTube(tube.id)).toEqual([]);
+    expect(await repo.shuttleEntries.listByTube("tube-d1-newer")).toHaveLength(
+      1,
+    );
+  });
+
+  it("gan khoan chi voi dong kho cau va xoa theo khoan chi (ca khi cascade)", async () => {
+    const repo = createGameRepository(createDb({ DB: database }));
+    const now = "2026-07-01T00:00:00.000Z";
+    await repo.games.insert({
+      id: "shuttle-game",
+      ownerUserId: "owner",
+      code: "SHUTTL",
+      name: "Cầu",
+      playedFrom: "",
+      playedTo: "",
+      settlementMode: "p2p",
+      settlementHostId: "",
+      location: "",
+      tags: [],
+      shareShow: [],
+      createdAt: now,
+      updatedAt: now,
+      deletedAt: null,
+      closedAt: null,
+      closeMode: "",
+    });
+    await repo.participants.insert(
+      {
+        id: "shuttle-p1",
+        gameId: "shuttle-game",
+        name: "An",
+        createdAt: now,
+        updatedAt: now,
+      },
+      { bankId: "", accountNo: "", accountName: "" },
+    );
+    for (const id of ["shuttle-ex-1", "shuttle-ex-2"]) {
+      await repo.expenses.insert({
+        id,
+        gameId: "shuttle-game",
+        payerParticipantId: "shuttle-p1",
+        kind: "expense",
+        category: "shuttle",
+        title: "Cầu",
+        amount: 60_000,
+        note: "",
+        splitMode: "equal",
+        excluded: false,
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
+    await repo.shuttleTubes.insert({
+      id: "tube-link",
+      ownerUserId: "owner",
+      name: "Ống",
+      tubePrice: 0,
+      shuttlePrice: 0,
+      initialQuantity: 12,
+      createdAt: now,
+    });
+    for (const expenseId of ["shuttle-ex-1", "shuttle-ex-2"]) {
+      await repo.shuttleEntries.insert({
+        id: `entry-${expenseId}`,
+        ownerUserId: "owner",
+        tubeId: "tube-link",
+        expenseId,
+        kind: "use",
+        delta: -2,
+        note: "",
+        createdAt: now,
+      });
+    }
+    expect(
+      (
+        await repo.shuttleEntries.listByExpenseIds([
+          "shuttle-ex-1",
+          "shuttle-ex-2",
+        ])
+      ).map((row) => row.id),
+    ).toHaveLength(2);
+
+    await repo.shuttleEntries.deleteByExpense("shuttle-ex-1");
+    expect(
+      (await repo.shuttleEntries.listByTube("tube-link")).map(
+        (row) => row.expenseId,
+      ),
+    ).toEqual(["shuttle-ex-2"]);
+
+    await repo.expenses.delete("shuttle-ex-2");
+    expect(await repo.shuttleEntries.listByTube("tube-link")).toEqual([]);
   });
 
   it("luu cuoc cha cung cac cuoc con va cach ly theo chu so huu", async () => {

@@ -15,11 +15,19 @@ import { ExpensePanel } from "./ExpensePanel";
 
 type DragEndEvent = { active: { id: string }; over: { id: string } | null };
 
-const { uploadMock, photoViewerOpen, uploadState, dnd } = vi.hoisted(() => ({
-  uploadMock: vi.fn().mockResolvedValue([]),
-  photoViewerOpen: vi.fn(),
-  uploadState: { pending: false, done: 0, total: 0, error: "" },
-  dnd: { onDragEnd: undefined as ((event: DragEndEvent) => void) | undefined },
+const { uploadMock, photoViewerOpen, uploadState, dnd, toastError } =
+  vi.hoisted(() => ({
+    toastError: vi.fn(),
+    uploadMock: vi.fn().mockResolvedValue([]),
+    photoViewerOpen: vi.fn(),
+    uploadState: { pending: false, done: 0, total: 0, error: "" },
+    dnd: {
+      onDragEnd: undefined as ((event: DragEndEvent) => void) | undefined,
+    },
+  }));
+
+vi.mock("sonner", () => ({
+  toast: { success: vi.fn(), error: toastError },
 }));
 
 vi.mock("@dnd-kit/core", async () => {
@@ -48,6 +56,29 @@ vi.mock("./use-photo-viewer", () => ({
 const participants: ApiParticipant[] = [
   { id: "an", name: "An", bankId: "", accountNo: "", accountName: "" },
   { id: "binh", name: "Bình", bankId: "", accountNo: "", accountName: "" },
+];
+
+const shuttleTubes = [
+  {
+    id: "tube-a",
+    name: "Ống A",
+    tubePrice: 360_000,
+    shuttlePrice: 30_000,
+    initialQuantity: 12,
+    stock: 8,
+    createdAt: "2026-01-01T00:00:00.000Z",
+    entries: [],
+  },
+  {
+    id: "tube-free",
+    name: "Ống miễn phí",
+    tubePrice: 0,
+    shuttlePrice: 0,
+    initialQuantity: 12,
+    stock: 12,
+    createdAt: "2026-01-01T00:00:00.000Z",
+    entries: [],
+  },
 ];
 
 let host: HTMLDivElement;
@@ -92,6 +123,7 @@ function panel(
     photos?: ApiPhoto[];
     pending?: boolean;
     compact?: boolean;
+    isOwner?: boolean;
     onReorder?: PanelHandlers["onReorder"];
   } = {},
 ) {
@@ -121,6 +153,7 @@ function panel(
           createElement(ExpensePanel, {
             gameId: "game",
             compact: options.compact,
+            isOwner: options.isOwner,
             participants: options.participants ?? participants,
             expenses: options.expenses || [],
             photos: options.photos || [],
@@ -211,6 +244,7 @@ beforeEach(() => {
   provideGameApi({
     photos: { detail: vi.fn() },
     ai: { suggestExpense: vi.fn(), scanReceipt: vi.fn() },
+    shuttles: { get: vi.fn().mockResolvedValue({ tubes: shuttleTubes }) },
   } as unknown as GameApiPort);
   client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   host = document.createElement("div");
@@ -1278,6 +1312,222 @@ describe("ExpensePanel", () => {
     await vi.waitFor(() =>
       expect(host.textContent).not.toContain("Đang quét..."),
     );
+  });
+});
+
+function pickShuttleCategory() {
+  const chip = [
+    ...host.querySelectorAll(
+      "[role='group'][aria-label='Danh mục chi tiêu'] button",
+    ),
+  ].find((item) => item.textContent?.includes("Cầu")) as HTMLButtonElement;
+  act(() => chip.click());
+}
+
+async function flushTubes() {
+  await act(async () => {
+    await vi.waitFor(() =>
+      expect(host.querySelector("select option[value='tube-a']")).not.toBe(
+        null,
+      ),
+    );
+  });
+}
+
+function chooseTube(value: string) {
+  const select = host.querySelector("select") as HTMLSelectElement;
+  act(() => {
+    select.value = value;
+    select.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+}
+
+async function submitExpense() {
+  await act(async () => {
+    host
+      .querySelector("form")
+      ?.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+  });
+}
+
+describe("ExpensePanel shuttle tube", () => {
+  it("hides the tube picker from a collaborator and sends no shuttle field", async () => {
+    const { onAdd } = panel({ isOwner: false });
+    pickShuttleCategory();
+    expect(host.querySelector("select")).toBeNull();
+    type(input("500.000"), "50000");
+    await submitExpense();
+    const sent = vi.mocked(onAdd).mock.calls[0][0];
+    expect(sent).not.toHaveProperty("shuttle");
+    expect(sent).toMatchObject({ category: "shuttle" });
+  });
+
+  it("fills the amount from the quantity and tube price, still editable", async () => {
+    const { onAdd } = panel({ isOwner: true });
+    pickShuttleCategory();
+    await flushTubes();
+    expect(host.textContent).toContain("còn 8 trái");
+    chooseTube("tube-a");
+    type(input("3"), "3");
+    expect(input("500.000").value).toBe("90000");
+    type(input("500.000"), "85000");
+    await submitExpense();
+    expect(onAdd).toHaveBeenCalledWith(
+      expect.objectContaining({
+        category: "shuttle",
+        amount: 85_000,
+        shuttle: { tubeId: "tube-a", quantity: 3 },
+      }),
+    );
+    expect(input("3").value).toBe("");
+    expect((host.querySelector("select") as HTMLSelectElement).value).toBe(
+      "tube-a",
+    );
+  });
+
+  it("keeps the typed amount when the tube has no price", async () => {
+    panel({ isOwner: true });
+    pickShuttleCategory();
+    await flushTubes();
+    type(input("500.000"), "40000");
+    chooseTube("tube-free");
+    type(input("3"), "2");
+    expect(input("500.000").value).toBe("40000");
+  });
+
+  it("sends a null shuttle for a shuttle expense without a tube and for other categories", async () => {
+    const { onAdd } = panel({ isOwner: true });
+    pickShuttleCategory();
+    await flushTubes();
+    type(input("500.000"), "50000");
+    await submitExpense();
+    expect(onAdd).toHaveBeenLastCalledWith(
+      expect.objectContaining({ shuttle: null }),
+    );
+    pickShuttleCategory();
+    type(input("500.000"), "20000");
+    await submitExpense();
+    expect(onAdd).toHaveBeenLastCalledWith(
+      expect.objectContaining({ category: "", shuttle: null }),
+    );
+  });
+
+  it("blocks a missing or too large quantity before sending", async () => {
+    const { onAdd } = panel({ isOwner: true });
+    pickShuttleCategory();
+    await flushTubes();
+    chooseTube("tube-a");
+    type(input("500.000"), "50000");
+    await submitExpense();
+    expect(onAdd).not.toHaveBeenCalled();
+    expect(host.textContent).toContain("Nhập số trái từ 1 đến");
+    type(input("3"), "5000");
+    await submitExpense();
+    expect(onAdd).not.toHaveBeenCalled();
+    type(input("3"), "4");
+    await act(async () => {});
+    expect(host.textContent).not.toContain("Nhập số trái từ 1 đến");
+  });
+
+  it("explains a stock error and keeps the form", async () => {
+    const onAdd = vi
+      .fn<PanelHandlers["onAdd"]>()
+      .mockRejectedValue(new Error("shuttle_stock_negative"));
+    panel({ isOwner: true, onAdd });
+    pickShuttleCategory();
+    await flushTubes();
+    chooseTube("tube-a");
+    type(input("3"), "9");
+    await submitExpense();
+    expect(toastError).toHaveBeenCalledWith(
+      "Ống cầu đã chọn không còn đủ cầu cho khoản chi này.",
+    );
+    expect(input("500.000").value).toBe("270000");
+  });
+
+  it("opens a linked expense with its tube, adds its quantity back and keeps its amount", async () => {
+    const onUpdate = vi.fn<PanelHandlers["onUpdate"]>().mockResolvedValue({});
+    panel({
+      isOwner: true,
+      onUpdate,
+      expenses: [
+        expense({
+          category: "shuttle",
+          title: "Cầu",
+          amount: 60_000,
+          shuttle: { tubeId: "tube-a", quantity: 2 },
+        }),
+      ],
+    });
+    rowAction("Sửa", "Cầu");
+    await flushTubes();
+    expect((host.querySelector("select") as HTMLSelectElement).value).toBe(
+      "tube-a",
+    );
+    expect(input("3").value).toBe("2");
+    expect(input("500.000").value).toBe("60000");
+    expect(host.textContent).toContain("còn 10 trái");
+    expect(host.textContent).toContain("còn 12 trái");
+    type(input("3"), "4");
+    expect(input("500.000").value).toBe("120000");
+    await submitExpense();
+    expect(onUpdate).toHaveBeenCalledWith(
+      "expense-a",
+      expect.objectContaining({ shuttle: { tubeId: "tube-a", quantity: 4 } }),
+    );
+  });
+
+  it("unlinks the tube when the category changes away from shuttle", async () => {
+    const onUpdate = vi.fn<PanelHandlers["onUpdate"]>().mockResolvedValue({});
+    panel({
+      isOwner: true,
+      onUpdate,
+      expenses: [
+        expense({
+          category: "shuttle",
+          title: "Cầu",
+          shuttle: { tubeId: "tube-a", quantity: 2 },
+        }),
+      ],
+    });
+    rowAction("Sửa", "Cầu");
+    pickShuttleCategory();
+    expect(host.querySelector("select")).toBeNull();
+    await submitExpense();
+    expect(onUpdate).toHaveBeenCalledWith(
+      "expense-a",
+      expect.objectContaining({ category: "", shuttle: null }),
+    );
+  });
+
+  it("shows hints when the tubes fail to load or none exist", async () => {
+    provideGameApi({
+      photos: { detail: vi.fn() },
+      ai: { suggestExpense: vi.fn(), scanReceipt: vi.fn() },
+      shuttles: { get: vi.fn().mockResolvedValue({ tubes: [] }) },
+    } as unknown as GameApiPort);
+    panel({ isOwner: true });
+    pickShuttleCategory();
+    await act(async () => {
+      await vi.waitFor(() =>
+        expect(host.textContent).toContain("Chưa có ống cầu nào"),
+      );
+    });
+    provideGameApi({
+      photos: { detail: vi.fn() },
+      ai: { suggestExpense: vi.fn(), scanReceipt: vi.fn() },
+      shuttles: { get: vi.fn().mockRejectedValue(new Error("offline")) },
+    } as unknown as GameApiPort);
+    client.clear();
+    act(() => root.unmount());
+    root = createRoot(host);
+    panel({ isOwner: true });
+    pickShuttleCategory();
+    await act(async () => {
+      await vi.waitFor(() =>
+        expect(host.textContent).toContain("Không tải được danh sách ống cầu"),
+      );
+    });
   });
 });
 

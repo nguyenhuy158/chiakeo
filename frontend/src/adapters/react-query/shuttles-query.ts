@@ -1,26 +1,24 @@
-// Hook cho kho cau — tach khoi queries.ts: kho cau thuoc tai khoan, khong
-// nam trong cache cua mot cuoc chia nao nen khong dung gameKeys.
-
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { ApiShuttleStock } from "../../../../shared/api-types";
-import type { ShuttleEntryInput } from "../../../../shared/schemas";
+import type { ApiShuttleTubes } from "../../../../shared/api-types";
+import type {
+  ShuttleEntryInput,
+  ShuttleTubeInput,
+  ShuttleTubeUpdateInput,
+} from "../../../../shared/schemas";
 import { getGameApi } from "../../core/container";
 
 export const shuttleKeys = { all: ["shuttles"] as const };
 
-export function useShuttleStock() {
+export function useShuttleTubes(options: { enabled?: boolean } = {}) {
   return useQuery({
     queryKey: shuttleKeys.all,
     queryFn: () => getGameApi().shuttles.get(),
+    enabled: options.enabled,
   });
 }
 
-/**
- * Cac mutation deu tra ve nguyen trang thai kho sau khi ghi, nen ghi thang vao
- * cache: bam "-1" la thay so doi ngay, khong cho mot vong fetch lai.
- */
 function useShuttleMutation<TVariables>(
-  mutationFn: (variables: TVariables) => Promise<ApiShuttleStock>,
+  mutationFn: (variables: TVariables) => Promise<ApiShuttleTubes>,
 ) {
   const queryClient = useQueryClient();
 
@@ -32,9 +30,29 @@ function useShuttleMutation<TVariables>(
   });
 }
 
+export function useCreateShuttleTube() {
+  return useShuttleMutation((input: ShuttleTubeInput) =>
+    getGameApi().shuttles.createTube(input),
+  );
+}
+
+export function useUpdateShuttleTube() {
+  return useShuttleMutation(
+    (variables: { tubeId: string; input: ShuttleTubeUpdateInput }) =>
+      getGameApi().shuttles.updateTube(variables.tubeId, variables.input),
+  );
+}
+
+export function useDeleteShuttleTube() {
+  return useShuttleMutation((tubeId: string) =>
+    getGameApi().shuttles.removeTube(tubeId),
+  );
+}
+
 export function useCreateShuttleEntry() {
-  return useShuttleMutation((input: ShuttleEntryInput) =>
-    getGameApi().shuttles.createEntry(input),
+  return useShuttleMutation(
+    (variables: { tubeId: string; input: ShuttleEntryInput }) =>
+      getGameApi().shuttles.createEntry(variables.tubeId, variables.input),
   );
 }
 

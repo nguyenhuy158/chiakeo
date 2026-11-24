@@ -136,6 +136,7 @@ for (const operation of OPERATIONS) {
         ? "Requires a browser session or SSO JWT. API tokens are not accepted."
         : "Application REST operation. Runtime Zod refinements and authorization remain authoritative.",
     tags: [tag],
+    ...(operation.deprecated && { deprecated: true }),
     parameters,
     requestBody,
     responses,

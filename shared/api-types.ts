@@ -78,7 +78,13 @@ export type ApiExpense = {
   splits: ApiExpenseSplit[];
   /** true la khoan van hien trong danh sach nhung khong tinh vao tong/so du. */
   excluded: boolean;
+  shuttle?: ApiExpenseShuttle;
   createdAt: string;
+};
+
+export type ApiExpenseShuttle = {
+  tubeId: string;
+  quantity: number;
 };
 
 /** Anh cua cuoc chia, chi kem ban thu nho de luoi anh tai nhanh. */
@@ -259,13 +265,28 @@ export type ApiShuttleEntry = {
   /** Kho sau khi ap dong nay — server tinh san de FE khong phai cong don. */
   stockAfter: number;
   note: string;
+  expenseId: string | null;
   createdAt: string;
 };
 
-/** Trang thai kho cau cua user: so hien co + vai thao tac gan nhat. */
+export type ApiShuttleTube = {
+  id: string;
+  name: string;
+  tubePrice: number;
+  shuttlePrice: number;
+  initialQuantity: number;
+  stock: number;
+  createdAt: string;
+  entries: ApiShuttleEntry[];
+};
+
 export type ApiShuttleStock = {
   stock: number;
   entries: ApiShuttleEntry[];
+};
+
+export type ApiShuttleTubes = ApiShuttleStock & {
+  tubes: ApiShuttleTube[];
 };
 
 export type ApiError = {

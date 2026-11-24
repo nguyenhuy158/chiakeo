@@ -292,6 +292,7 @@ export function GamePage() {
     onAddTransfer: (input: Parameters<typeof addTransfer.mutateAsync>[0]) =>
       addTransfer.mutateAsync(input),
     onReorder: (expenseIds: string[]) => reorderExpenses.mutate(expenseIds),
+    isOwner: game.isOwner,
   };
   const compactExpensePanel = <ExpensePanel {...expensePanelProps} compact />;
 

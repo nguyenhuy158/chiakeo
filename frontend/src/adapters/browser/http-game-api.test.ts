@@ -62,8 +62,21 @@ describe("HTTP Game API", () => {
     ["GET", "/api/shuttles", () => api.shuttles.get()],
     [
       "POST",
-      "/api/shuttles/entries",
-      () => api.shuttles.createEntry(input as never),
+      "/api/shuttles/tubes",
+      () => api.shuttles.createTube(input as never),
+      JSON.stringify(input),
+    ],
+    [
+      "PATCH",
+      "/api/shuttles/tubes/t",
+      () => api.shuttles.updateTube("t", input),
+      JSON.stringify(input),
+    ],
+    ["DELETE", "/api/shuttles/tubes/t", () => api.shuttles.removeTube("t")],
+    [
+      "POST",
+      "/api/shuttles/tubes/t/entries",
+      () => api.shuttles.createEntry("t", input as never),
       JSON.stringify(input),
     ],
     ["DELETE", "/api/shuttles/entries/e", () => api.shuttles.removeEntry("e")],

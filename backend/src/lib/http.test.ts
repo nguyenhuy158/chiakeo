@@ -4,6 +4,7 @@ import { z } from "zod";
 import {
   AiProviderError,
   BadRequestError,
+  ForbiddenError,
   InvalidInputError,
   NotFoundError,
 } from "../core/application/errors";
@@ -59,6 +60,7 @@ describe("respond", () => {
   it.each([
     [new NotFoundError(), 404, "not_found"],
     [new InvalidInputError(), 400, "invalid_input"],
+    [new ForbiddenError(), 403, "forbidden"],
     [new BadRequestError("game_closed"), 400, "game_closed"],
     [
       new AiProviderError("gemini_not_configured"),

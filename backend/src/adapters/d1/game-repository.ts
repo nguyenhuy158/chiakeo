@@ -684,7 +684,69 @@ export function createGameRepository(db: Db): GameRepository {
       },
     },
 
+    shuttleTubes: {
+      async listByOwner(userId) {
+        return db
+          .select()
+          .from(schema.shuttleTubes)
+          .where(eq(schema.shuttleTubes.ownerUserId, userId))
+          .orderBy(
+            desc(schema.shuttleTubes.createdAt),
+            desc(schema.shuttleTubes.id),
+          );
+      },
+      async getOwned(tubeId, userId) {
+        const rows = await db
+          .select()
+          .from(schema.shuttleTubes)
+          .where(
+            and(
+              eq(schema.shuttleTubes.id, tubeId),
+              eq(schema.shuttleTubes.ownerUserId, userId),
+            ),
+          )
+          .limit(1);
+        return rows[0] || null;
+      },
+      async insert(row) {
+        await db.insert(schema.shuttleTubes).values(row);
+      },
+      async update(tubeId, fields) {
+        await db
+          .update(schema.shuttleTubes)
+          .set(fields)
+          .where(eq(schema.shuttleTubes.id, tubeId));
+      },
+      async delete(tubeId) {
+        await db
+          .delete(schema.shuttleEntries)
+          .where(eq(schema.shuttleEntries.tubeId, tubeId));
+        await db
+          .delete(schema.shuttleTubes)
+          .where(eq(schema.shuttleTubes.id, tubeId));
+      },
+    },
+
     shuttleEntries: {
+      async listByTube(tubeId) {
+        return db
+          .select()
+          .from(schema.shuttleEntries)
+          .where(eq(schema.shuttleEntries.tubeId, tubeId))
+          .orderBy(asc(schema.shuttleEntries.createdAt));
+      },
+      async listByExpenseIds(expenseIds) {
+        if (expenseIds.length === 0) return [];
+        return db
+          .select()
+          .from(schema.shuttleEntries)
+          .where(inArray(schema.shuttleEntries.expenseId, expenseIds));
+      },
+      async deleteByExpense(expenseId) {
+        await db
+          .delete(schema.shuttleEntries)
+          .where(eq(schema.shuttleEntries.expenseId, expenseId));
+      },
       async listByOwner(userId) {
         return db
           .select()

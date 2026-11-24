@@ -80,7 +80,12 @@ export function createHttpGameApi(): GameApiPort {
     },
     shuttles: {
       get: () => request(`/api/shuttles`),
-      createEntry: (input) => post(`/api/shuttles/entries`, input),
+      createTube: (input) => post(`/api/shuttles/tubes`, input),
+      updateTube: (tubeId, input) =>
+        patch(`/api/shuttles/tubes/${tubeId}`, input),
+      removeTube: (tubeId) => destroy(`/api/shuttles/tubes/${tubeId}`),
+      createEntry: (tubeId, input) =>
+        post(`/api/shuttles/tubes/${tubeId}/entries`, input),
       removeEntry: (entryId) => destroy(`/api/shuttles/entries/${entryId}`),
     },
     contacts: {

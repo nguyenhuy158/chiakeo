@@ -241,8 +241,18 @@ export function fakeRepo(
       listByUser: async () => [],
       upsert: unused("userPreferences.upsert"),
     },
+    shuttleTubes: {
+      listByOwner: async () => [],
+      getOwned: unused("shuttleTubes.getOwned"),
+      insert: unused("shuttleTubes.insert"),
+      update: unused("shuttleTubes.update"),
+      delete: unused("shuttleTubes.delete"),
+    },
     shuttleEntries: {
       listByOwner: async () => [],
+      listByTube: async () => [],
+      listByExpenseIds: async () => [],
+      deleteByExpense: unused("shuttleEntries.deleteByExpense"),
       getOwned: unused("shuttleEntries.getOwned"),
       insert: unused("shuttleEntries.insert"),
       delete: unused("shuttleEntries.delete"),

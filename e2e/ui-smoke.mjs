@@ -1026,12 +1026,27 @@ try {
   await cliRun("contact-rm", "Eve");
   assert.doesNotMatch(await cliRun("contacts"), /Eve/);
 
-  await cliRun("shuttle", "set", "10", "--note", "e2e");
-  await cliRun("shuttle", "use", "2");
+  await cliRun("shuttle-tube", "E2E tube", "--tube-price", "360k");
+  assert.match(
+    await cliRun("shuttles"),
+    /E2E tube\s+stock 12\s+tube 360\.000 ₫\s+shuttle 30\.000 ₫/,
+  );
+  await cliRun("shuttle", "E2E tube", "use", "2", "--note", "e2e");
   const shuttleOutput = await cliRun("shuttles");
-  assert.match(shuttleOutput, /Stock: 8/);
-  await cliRun("shuttle-rm", /^(\S+)\s+-2\s/m.exec(shuttleOutput)[1]);
-  assert.match(await cliRun("shuttles"), /Stock: 10/);
+  assert.match(shuttleOutput, /E2E tube\s+stock 10/);
+  await cliRun("shuttle-rm", /^\s+(\S+)\s+-2\s/m.exec(shuttleOutput)[1]);
+  assert.match(await cliRun("shuttles"), /E2E tube\s+stock 12/);
+  await cliRun("shuttle-tube-edit", "E2E tube", "--name", "E2E renamed");
+  await cliRun("shuttle-tube-rm", "E2E renamed");
+  assert.doesNotMatch(await cliRun("shuttles"), /E2E/);
+  await cliRun(
+    "api",
+    "POST",
+    "/api/shuttles/entries",
+    '{"kind":"add","quantity":3}',
+  );
+  assert.match(await cliRun("api", "GET", "/api/shuttles"), /"stock":\s*3/);
+  await cliRun("shuttle-tube-rm", "Ống cầu 1");
 
   assert.match(await cliRun("photos", "CLI Extra"), /No photos/);
   const pngCrc = (buffer) => {
@@ -1426,7 +1441,7 @@ try {
 
   await page.goto(`${BASE}/shuttles`);
   await page
-    .getByRole("button", { name: "Dùng 1 trái" })
+    .getByRole("button", { name: "Thêm ống" })
     .waitFor({ state: "visible", ...WAIT });
   assert.equal(await scrolls(), false, "kho cau cuon duoc tren dien thoai");
   await page.goto(`${BASE}/fun`);

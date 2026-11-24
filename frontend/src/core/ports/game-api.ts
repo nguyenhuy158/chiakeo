@@ -20,7 +20,7 @@ import type {
   ApiPhotoDetail,
   ApiShareCandidate,
   ApiShareView,
-  ApiShuttleStock,
+  ApiShuttleTubes,
   ApiTrashGame,
 } from "../../../../shared/api-types";
 import type { Contact } from "../../../../shared/contacts";
@@ -39,6 +39,8 @@ import type {
   PhotoInput,
   PhotoUpdateInput,
   ShuttleEntryInput,
+  ShuttleTubeInput,
+  ShuttleTubeUpdateInput,
   TransferInput,
   UserPreferences,
   UserPreferencesPatch,
@@ -103,12 +105,18 @@ export type GameApiPort = {
     ): Promise<{ preferences: UserPreferences }>;
   };
   shuttles: {
-    /** Kho cau ung truoc cho team: so cau con lai + lich su +/- gan nhat. */
-    get(): Promise<ApiShuttleStock>;
-    /** Them / bo / chot lai so cau; tra ve trang thai kho sau khi ghi. */
-    createEntry(input: ShuttleEntryInput): Promise<ApiShuttleStock>;
-    /** Xoa mot lan bam sai. */
-    removeEntry(entryId: string): Promise<ApiShuttleStock>;
+    get(): Promise<ApiShuttleTubes>;
+    createTube(input: ShuttleTubeInput): Promise<ApiShuttleTubes>;
+    updateTube(
+      tubeId: string,
+      input: ShuttleTubeUpdateInput,
+    ): Promise<ApiShuttleTubes>;
+    removeTube(tubeId: string): Promise<ApiShuttleTubes>;
+    createEntry(
+      tubeId: string,
+      input: ShuttleEntryInput,
+    ): Promise<ApiShuttleTubes>;
+    removeEntry(entryId: string): Promise<ApiShuttleTubes>;
   };
   contacts: {
     /** Danh ba tu nhap gop voi nguoi suy ra tu cac cuoc chia da tao. */

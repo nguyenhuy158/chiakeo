@@ -188,9 +188,28 @@ export type DeviceCodeRow = {
 };
 
 /** Mot dong kho cau nhu luu trong DB (chua tinh so con lai). */
+export type ShuttleTubeRow = {
+  id: string;
+  ownerUserId: string;
+  name: string;
+  tubePrice: number;
+  shuttlePrice: number;
+  initialQuantity: number;
+  createdAt: string;
+};
+
+export type ShuttleTubeUpdate = Partial<
+  Pick<
+    ShuttleTubeRow,
+    "name" | "tubePrice" | "shuttlePrice" | "initialQuantity"
+  >
+>;
+
 export type ShuttleEntryRow = {
   id: string;
   ownerUserId: string;
+  tubeId: string;
+  expenseId: string | null;
   kind: string;
   delta: number;
   note: string;
@@ -399,12 +418,22 @@ export type GameRepository = {
       updatedAt: string,
     ): Promise<void>;
   };
+  shuttleTubes: {
+    listByOwner(userId: string): Promise<ShuttleTubeRow[]>;
+    getOwned(tubeId: string, userId: string): Promise<ShuttleTubeRow | null>;
+    insert(row: ShuttleTubeRow): Promise<void>;
+    update(tubeId: string, fields: ShuttleTubeUpdate): Promise<void>;
+    delete(tubeId: string): Promise<void>;
+  };
   shuttleEntries: {
     /** Toan bo thao tac cua user, cu nhat truoc — de cong don ra kho hien tai. */
     listByOwner(userId: string): Promise<ShuttleEntryRow[]>;
+    listByTube(tubeId: string): Promise<ShuttleEntryRow[]>;
+    listByExpenseIds(expenseIds: string[]): Promise<ShuttleEntryRow[]>;
     getOwned(entryId: string, userId: string): Promise<ShuttleEntryRow | null>;
     insert(row: ShuttleEntryRow): Promise<void>;
     delete(entryId: string): Promise<void>;
+    deleteByExpense(expenseId: string): Promise<void>;
   };
   contacts: {
     listByOwner(userId: string): Promise<ContactBookRow[]>;

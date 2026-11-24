@@ -1,40 +1,40 @@
 import { act, createElement, type ReactNode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { ApiShuttleEntry } from "../../../shared/api-types";
+import type { ApiShuttleTube } from "../../../shared/api-types";
 
-const { state, create, remove, confirm, error } = vi.hoisted(() => ({
-  state: {
-    stock: undefined as number | undefined,
-    entries: undefined as ApiShuttleEntry[] | undefined,
-    loading: false,
-    queryError: false,
-    creating: false,
-    deleting: false,
-  },
-  create: vi.fn(),
-  remove: vi.fn(),
-  confirm: vi.fn(),
-  error: vi.fn(),
-}));
+const { state, createTube, updateTube, deleteTube, confirm, error } =
+  vi.hoisted(() => ({
+    state: {
+      tubes: undefined as unknown[] | undefined,
+      loading: false,
+      queryError: false,
+      saving: false,
+    },
+    createTube: vi.fn(),
+    updateTube: vi.fn(),
+    deleteTube: vi.fn(),
+    confirm: vi.fn(),
+    error: vi.fn(),
+  }));
 
 vi.mock("../adapters/react-query/shuttles-query", () => ({
-  useShuttleStock: () => ({
-    data:
-      state.stock === undefined
-        ? undefined
-        : { stock: state.stock, entries: state.entries },
+  useShuttleTubes: () => ({
+    data: state.tubes === undefined ? undefined : { tubes: state.tubes },
     isPending: state.loading,
     isError: state.queryError,
   }),
-  useCreateShuttleEntry: () => ({
-    mutateAsync: create,
-    isPending: state.creating,
+  useCreateShuttleTube: () => ({
+    mutateAsync: createTube,
+    isPending: state.saving,
   }),
-  useDeleteShuttleEntry: () => ({
-    mutateAsync: remove,
-    isPending: state.deleting,
+  useUpdateShuttleTube: () => ({
+    mutateAsync: updateTube,
+    isPending: false,
   }),
+  useDeleteShuttleTube: () => ({ mutateAsync: deleteTube }),
+  useCreateShuttleEntry: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useDeleteShuttleEntry: () => ({ mutateAsync: vi.fn(), isPending: false }),
 }));
 vi.mock("../components/ConfirmDialog", () => ({ useConfirm: () => confirm }));
 vi.mock("sonner", () => ({ toast: { error } }));
@@ -51,18 +51,16 @@ import { ShuttlesPage } from "./ShuttlesPage";
 let host: HTMLDivElement;
 let root: Root;
 
-function entry(
-  id: string,
-  kind: ApiShuttleEntry["kind"],
-  delta: number,
-): ApiShuttleEntry {
+function tube(id: string, name: string, stock: number): ApiShuttleTube {
   return {
     id,
-    kind,
-    delta,
-    stockAfter: 8,
-    note: id === "add" ? "Mua mới" : "",
+    name,
+    tubePrice: 360_000,
+    shuttlePrice: 30_000,
+    initialQuantity: 12,
+    stock,
     createdAt: "2026-01-01T00:00:00Z",
+    entries: [],
   };
 }
 
@@ -71,17 +69,17 @@ function render() {
 }
 
 function button(label: string) {
-  return [...host.querySelectorAll("button")].find(
+  return [...document.querySelectorAll("button")].find(
     (item) =>
       item.textContent?.trim() === label ||
       item.getAttribute("aria-label") === label,
   ) as HTMLButtonElement | undefined;
 }
 
-function fill(label: string, value: string) {
+function fillName(value: string) {
   act(() => {
-    const input = host.querySelector(
-      `[aria-label="${label}"]`,
+    const input = document.querySelector(
+      '[role="dialog"] form input',
     ) as HTMLInputElement;
     const setter = Object.getOwnPropertyDescriptor(
       HTMLInputElement.prototype,
@@ -92,24 +90,23 @@ function fill(label: string, value: string) {
   });
 }
 
-async function submit() {
+async function submitForm() {
   await act(async () =>
-    host
-      .querySelector("form")
+    document
+      .querySelector('[role="dialog"] form')
       ?.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })),
   );
 }
 
 beforeEach(() => {
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
-  state.stock = undefined;
-  state.entries = undefined;
+  state.tubes = undefined;
   state.loading = false;
   state.queryError = false;
-  state.creating = false;
-  state.deleting = false;
-  create.mockReset().mockResolvedValue(undefined);
-  remove.mockReset().mockResolvedValue(undefined);
+  state.saving = false;
+  createTube.mockReset().mockResolvedValue(undefined);
+  updateTube.mockReset().mockResolvedValue(undefined);
+  deleteTube.mockReset().mockResolvedValue(undefined);
   confirm.mockReset().mockResolvedValue(true);
   error.mockReset();
   host = document.createElement("div");
@@ -123,7 +120,7 @@ afterEach(() => {
 });
 
 describe("ShuttlesPage", () => {
-  it("shows error, loading, and empty stock states", () => {
+  it("shows error, loading and empty states", () => {
     state.queryError = true;
     render();
     expect(host.textContent).toContain("Không tải được kho cầu");
@@ -132,114 +129,81 @@ describe("ShuttlesPage", () => {
     render();
     expect(host.textContent).toContain("Đang đếm cầu");
     state.loading = false;
-    state.stock = 0;
-    state.entries = [];
+    state.tubes = [];
     render();
-    expect(host.textContent).toContain("Chưa ghi gì");
-    expect(button("Dùng 1 trái")?.disabled).toBe(true);
-    expect(button("Chốt lại")?.disabled).toBe(true);
+    expect(host.textContent).toContain("Chưa có ống cầu nào");
   });
 
-  it("adds and uses stock with a trimmed note", async () => {
-    state.stock = 3;
-    state.entries = [];
+  it("lists every tube with its remaining shuttles", () => {
+    state.tubes = [tube("a", "Ống A", 8), tube("b", "Ống B", 12)];
     render();
-    expect(button("Dùng 4 trái")?.disabled).toBe(true);
-    fill("Ghi chú", "  Mua mới  ");
-    await act(async () => button("Thêm 6 trái")?.click());
-    expect(create).toHaveBeenCalledWith({
-      kind: "add",
-      quantity: 6,
-      note: "Mua mới",
-    });
-    expect(
-      (host.querySelector('[aria-label="Ghi chú"]') as HTMLInputElement).value,
-    ).toBe("");
-    await act(async () => button("Dùng 2 trái")?.click());
-    expect(create).toHaveBeenCalledWith({ kind: "use", quantity: 2, note: "" });
-    state.creating = true;
-    render();
-    expect(button("Thêm 1 trái")?.disabled).toBe(true);
-    expect(button("Dùng 1 trái")?.disabled).toBe(true);
+    expect(host.textContent).toContain("Ống A");
+    expect(host.textContent).toContain("Ống B");
+    expect(host.querySelectorAll("[aria-live]")).toHaveLength(2);
   });
 
-  it("validates and records an exact count", async () => {
-    state.stock = 8;
-    state.entries = [];
+  it("creates a tube from the sheet and closes it", async () => {
+    state.tubes = [];
     render();
-    fill("Chốt lại số cầu đang có", "9999999");
-    await submit();
-    expect(error).toHaveBeenCalledWith(
-      expect.stringContaining("Nhập số cầu từ 0"),
+    act(() => button("Thêm ống")?.click());
+    expect(document.body.textContent).toContain("Thêm ống cầu");
+    fillName("Ống mới");
+    await submitForm();
+    expect(createTube).toHaveBeenCalledWith(
+      expect.objectContaining({ name: "Ống mới", initialQuantity: 12 }),
     );
-    expect(create).not.toHaveBeenCalled();
-    fill("Chốt lại số cầu đang có", "12abc");
-    expect(
-      (
-        host.querySelector(
-          '[aria-label="Chốt lại số cầu đang có"]',
-        ) as HTMLInputElement
-      ).value,
-    ).toBe("12");
-    await submit();
-    expect(create).toHaveBeenCalledWith({
-      kind: "set",
-      quantity: 12,
-      note: "",
-    });
-    expect(
-      (
-        host.querySelector(
-          '[aria-label="Chốt lại số cầu đang có"]',
-        ) as HTMLInputElement
-      ).value,
-    ).toBe("");
+    await vi.waitFor(() =>
+      expect(document.querySelector('[role="dialog"]')).toBeNull(),
+    );
   });
 
-  it("maps known and unknown write failures", async () => {
-    state.stock = 2;
-    state.entries = [];
+  it("keeps the sheet open and reports a failed save", async () => {
+    state.tubes = [];
     render();
-    create.mockRejectedValueOnce(new Error("shuttle_stock_negative"));
-    await act(async () => button("Dùng 1 trái")?.click());
-    expect(error).toHaveBeenCalledWith(
-      "Trong kho không còn đủ cầu cho thao tác này.",
-    );
-    create.mockRejectedValueOnce(new Error("shuttle_stock_too_large"));
-    await act(async () => button("Thêm 1 trái")?.click());
-    expect(error).toHaveBeenCalledWith("Số cầu quá lớn.");
-    create.mockRejectedValueOnce("offline");
-    await act(async () => button("Thêm 1 trái")?.click());
+    act(() => button("Thêm ống")?.click());
+    fillName("Ống mới");
+    createTube.mockRejectedValueOnce(new Error("boom"));
+    await submitForm();
     expect(error).toHaveBeenCalledWith("Không ghi được, thử lại sau.");
+    expect(document.querySelector('[role="dialog"] form')).not.toBeNull();
   });
 
-  it("shows all entry kinds and confirms deletion", async () => {
-    state.stock = 8;
-    state.entries = [
-      entry("add", "add", 6),
-      entry("use", "use", -2),
-      entry("set", "set", 0),
-    ];
+  it("edits an existing tube", async () => {
+    state.tubes = [tube("a", "Ống A", 8)];
     render();
-    expect(host.textContent).toContain("Thêm cầu");
-    expect(host.textContent).toContain("Dùng cầu");
-    expect(host.textContent).toContain("Chốt lại số cầu");
-    expect(host.textContent).toContain("Mua mới");
-    const deleteButtons = [
-      ...host.querySelectorAll('button[aria-label="Xóa lần ghi này"]'),
-    ] as HTMLButtonElement[];
+    act(() => button("Sửa Ống A")?.click());
+    expect(document.body.textContent).toContain("Sửa ống cầu");
+    await submitForm();
+    expect(updateTube).toHaveBeenCalledWith({
+      tubeId: "a",
+      input: expect.objectContaining({ name: "Ống A", shuttlePrice: 30_000 }),
+    });
+    expect(createTube).not.toHaveBeenCalled();
+  });
+
+  it("closes the sheet without saving", () => {
+    state.tubes = [];
+    render();
+    act(() => button("Thêm ống")?.click());
+    act(() => {
+      document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+    });
+    expect(createTube).not.toHaveBeenCalled();
+  });
+
+  it("confirms before deleting a tube and reports failures", async () => {
+    state.tubes = [tube("a", "Ống A", 8)];
+    render();
     confirm.mockResolvedValueOnce(false);
-    await act(async () => deleteButtons[0].click());
-    expect(remove).not.toHaveBeenCalled();
-    await act(async () => deleteButtons[0].click());
-    expect(remove).toHaveBeenCalledWith("add");
-    remove.mockRejectedValueOnce(new Error("shuttle_stock_negative"));
-    await act(async () => deleteButtons[1].click());
-    expect(error).toHaveBeenCalledWith(
-      "Trong kho không còn đủ cầu cho thao tác này.",
+    await act(async () => button("Xóa Ống A")?.click());
+    expect(deleteTube).not.toHaveBeenCalled();
+    await act(async () => button("Xóa Ống A")?.click());
+    expect(confirm).toHaveBeenLastCalledWith(
+      expect.objectContaining({ title: "Xóa Ống A?", destructive: true }),
     );
-    state.deleting = true;
-    render();
-    expect(button("Xóa lần ghi này")?.disabled).toBe(true);
+    expect(deleteTube).toHaveBeenCalledWith("a");
+    deleteTube.mockRejectedValueOnce(new Error("boom"));
+    await act(async () => button("Xóa Ống A")?.click());
+    expect(error).toHaveBeenCalledWith("Không ghi được, thử lại sau.");
   });
 });

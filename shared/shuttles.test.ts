@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
   computeShuttleStock,
+  defaultShuttlePrice,
   MAX_SHUTTLE_STOCK,
   shuttleDelta,
+  shuttleExpenseAmount,
   shuttleStockError,
 } from "./shuttles";
 
@@ -45,5 +47,26 @@ describe("shuttleStockError", () => {
     expect(shuttleStockError(MAX_SHUTTLE_STOCK + 1)).toBe(
       "shuttle_stock_too_large",
     );
+  });
+});
+
+describe("defaultShuttlePrice", () => {
+  it("divides the tube price by the starting quantity and rounds to a dong", () => {
+    expect(defaultShuttlePrice(360_000, 12)).toBe(30_000);
+    expect(defaultShuttlePrice(100_000, 12)).toBe(8333);
+    expect(defaultShuttlePrice(100_000, 8)).toBe(12_500);
+  });
+
+  it("treats a missing quantity or negative price as no price", () => {
+    expect(defaultShuttlePrice(360_000, 0)).toBe(0);
+    expect(defaultShuttlePrice(-1, 12)).toBe(0);
+    expect(defaultShuttlePrice(0, 12)).toBe(0);
+  });
+});
+
+describe("shuttleExpenseAmount", () => {
+  it("multiplies the quantity by the price of one shuttle", () => {
+    expect(shuttleExpenseAmount(3, 30_000)).toBe(90_000);
+    expect(shuttleExpenseAmount(0, 30_000)).toBe(0);
   });
 });

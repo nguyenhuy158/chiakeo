@@ -392,6 +392,24 @@ export const userPreferences = sqliteTable(
  * "con lai". Nho vay xoa mot lan bam sai khong lam sai cac lan sau, va nguoi
  * dung con doi chieu duoc hom nao dung bao nhieu trai.
  */
+export const shuttleTubes = sqliteTable(
+  "chiakeo_shuttle_tubes",
+  {
+    id: text("id").primaryKey(),
+    ownerUserId: text("owner_user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    tubePrice: integer("tube_price").notNull().default(0),
+    shuttlePrice: integer("shuttle_price").notNull().default(0),
+    initialQuantity: integer("initial_quantity").notNull().default(12),
+    createdAt: text("created_at").notNull(),
+  },
+  (table) => [
+    index("chiakeo_shuttle_tubes_owner_id_idx").on(table.ownerUserId),
+  ],
+);
+
 export const shuttleEntries = sqliteTable(
   "chiakeo_shuttle_entries",
   {
@@ -399,6 +417,10 @@ export const shuttleEntries = sqliteTable(
     ownerUserId: text("owner_user_id")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
+    tubeId: text("tube_id").notNull().default(""),
+    expenseId: text("expense_id").references(() => expenses.id, {
+      onDelete: "cascade",
+    }),
     /** ShuttleEntryKind; text tu do de them loai moi khong can migration. */
     kind: text("kind").notNull(),
     /** Thay doi len kho: am la bo ra, duong la them vao. */
@@ -408,6 +430,8 @@ export const shuttleEntries = sqliteTable(
   },
   (table) => [
     index("chiakeo_shuttle_entries_owner_id_idx").on(table.ownerUserId),
+    index("chiakeo_shuttle_entries_tube_id_idx").on(table.tubeId),
+    index("chiakeo_shuttle_entries_expense_id_idx").on(table.expenseId),
   ],
 );
 

@@ -1,29 +1,36 @@
 import type {
   ApiShuttleEntry,
   ApiShuttleStock,
+  ApiShuttleTube,
+  ApiShuttleTubes,
 } from "../../../../shared/api-types";
-import type { ShuttleEntryInput } from "../../../../shared/schemas";
+import type {
+  ShuttleEntryInput,
+  ShuttleTubeCreate,
+  ShuttleTubeUpdateInput,
+} from "../../../../shared/schemas";
 import {
   computeShuttleStock,
+  DEFAULT_TUBE_QUANTITY,
+  defaultShuttlePrice,
+  LEGACY_TUBE_NAME,
   SHUTTLE_ENTRY_LIST_LIMIT,
   type ShuttleEntryKind,
   shuttleDelta,
   shuttleStockError,
 } from "../../../../shared/shuttles";
 import { createId, nowIso } from "../../lib/ids";
-import type { GameRepository, ShuttleEntryRow } from "../ports/game-repository";
-import { BadRequestError, NotFoundError } from "./errors";
+import type {
+  GameRepository,
+  ShuttleEntryRow,
+  ShuttleTubeRow,
+  ShuttleTubeUpdate,
+} from "../ports/game-repository";
+import { BadRequestError, InvalidInputError, NotFoundError } from "./errors";
 
-/**
- * Kho cau ung truoc cho team. Chi co chu tai khoan thay kho cua minh — day la
- * tien rieng cua nguoi ung cau, khong gan vao mot cuoc chia nao.
- */
+export const SHUTTLE_ENTRY_LINKED_ERROR = "shuttle_entry_linked_to_expense";
 
-/**
- * Cong don tu dong cu nhat len de moi dong biet kho ngay sau no, roi dao lai
- * cho FE (moi nhat truoc) va cat bot phan qua dai.
- */
-function toView(rows: ShuttleEntryRow[]): ApiShuttleStock {
+function toStockView(rows: ShuttleEntryRow[]): ApiShuttleStock {
   const entries: ApiShuttleEntry[] = [];
   let running = 0;
 
@@ -35,6 +42,7 @@ function toView(rows: ShuttleEntryRow[]): ApiShuttleStock {
       delta: row.delta,
       stockAfter: running,
       note: row.note,
+      expenseId: row.expenseId,
       createdAt: row.createdAt,
     });
   }
@@ -45,64 +53,182 @@ function toView(rows: ShuttleEntryRow[]): ApiShuttleStock {
   };
 }
 
-export async function getShuttleStock(
-  repo: GameRepository,
-  userId: string,
-): Promise<ApiShuttleStock> {
-  return toView(await repo.shuttleEntries.listByOwner(userId));
+function toTubeView(
+  tube: ShuttleTubeRow,
+  rows: ShuttleEntryRow[],
+): ApiShuttleTube {
+  return {
+    id: tube.id,
+    name: tube.name,
+    tubePrice: tube.tubePrice,
+    shuttlePrice: tube.shuttlePrice,
+    initialQuantity: tube.initialQuantity,
+    createdAt: tube.createdAt,
+    ...toStockView(rows),
+  };
 }
 
-/**
- * Ghi mot thao tac (+ / - / chot lai so cau). Kiem tran o day chu khong o
- * schema: gioi han phu thuoc kho hien tai, ma schema thi khong biet DB.
- */
+export async function listShuttleTubes(
+  repo: GameRepository,
+  userId: string,
+): Promise<ApiShuttleTubes> {
+  const [tubes, rows] = await Promise.all([
+    repo.shuttleTubes.listByOwner(userId),
+    repo.shuttleEntries.listByOwner(userId),
+  ]);
+
+  return {
+    ...toStockView(rows),
+    tubes: tubes.map((tube) =>
+      toTubeView(
+        tube,
+        rows.filter((row) => row.tubeId === tube.id),
+      ),
+    ),
+  };
+}
+
+async function requireOwnedTube(
+  repo: GameRepository,
+  userId: string,
+  tubeId: string,
+) {
+  const tube = await repo.shuttleTubes.getOwned(tubeId, userId);
+  if (!tube) throw new NotFoundError();
+  return tube;
+}
+
+export async function createShuttleTube(
+  repo: GameRepository,
+  userId: string,
+  input: ShuttleTubeCreate,
+): Promise<ApiShuttleTubes> {
+  const now = nowIso();
+  const { tubePrice, initialQuantity } = input;
+  const tube: ShuttleTubeRow = {
+    id: createId("tube"),
+    ownerUserId: userId,
+    name: input.name,
+    tubePrice,
+    shuttlePrice:
+      input.shuttlePrice ?? defaultShuttlePrice(tubePrice, initialQuantity),
+    initialQuantity,
+    createdAt: now,
+  };
+
+  await repo.shuttleTubes.insert(tube);
+  await repo.shuttleEntries.insert({
+    id: createId("shuttle"),
+    ownerUserId: userId,
+    tubeId: tube.id,
+    expenseId: null,
+    kind: "add",
+    delta: initialQuantity,
+    note: "",
+    createdAt: now,
+  });
+
+  return listShuttleTubes(repo, userId);
+}
+
+export async function updateShuttleTube(
+  repo: GameRepository,
+  userId: string,
+  tubeId: string,
+  input: ShuttleTubeUpdateInput,
+): Promise<ApiShuttleTubes> {
+  const tube = await requireOwnedTube(repo, userId, tubeId);
+
+  const fields: ShuttleTubeUpdate = { ...input };
+  if (input.tubePrice !== undefined && input.shuttlePrice === undefined) {
+    fields.shuttlePrice = defaultShuttlePrice(
+      input.tubePrice,
+      input.initialQuantity ?? tube.initialQuantity,
+    );
+  }
+  if (Object.keys(fields).length === 0) throw new InvalidInputError();
+
+  await repo.shuttleTubes.update(tube.id, fields);
+  return listShuttleTubes(repo, userId);
+}
+
+export async function deleteShuttleTube(
+  repo: GameRepository,
+  userId: string,
+  tubeId: string,
+): Promise<ApiShuttleTubes> {
+  const tube = await requireOwnedTube(repo, userId, tubeId);
+  await repo.shuttleTubes.delete(tube.id);
+  return listShuttleTubes(repo, userId);
+}
+
 export async function createShuttleEntry(
   repo: GameRepository,
   userId: string,
+  tubeId: string,
   input: ShuttleEntryInput,
-): Promise<ApiShuttleStock> {
-  const rows = await repo.shuttleEntries.listByOwner(userId);
-  const kind = input.kind;
-  const quantity = input.quantity;
-  const delta = shuttleDelta(kind, quantity, computeShuttleStock(rows));
+): Promise<ApiShuttleTubes> {
+  const tube = await requireOwnedTube(repo, userId, tubeId);
+  const rows = await repo.shuttleEntries.listByTube(tube.id);
+  const stock = computeShuttleStock(rows);
+  const delta = shuttleDelta(input.kind, input.quantity, stock);
 
-  const error = shuttleStockError(computeShuttleStock(rows) + delta);
+  const error = shuttleStockError(stock + delta);
   if (error) throw new BadRequestError(error);
 
-  // Bam "+0" hoac chot lai dung so dang co: khong co gi doi, khong ghi dong rac.
-  if (delta === 0) return toView(rows);
+  if (delta !== 0) {
+    await repo.shuttleEntries.insert({
+      id: createId("shuttle"),
+      ownerUserId: userId,
+      tubeId: tube.id,
+      expenseId: null,
+      kind: input.kind,
+      delta,
+      note: input.note?.trim() || "",
+      createdAt: nowIso(),
+    });
+  }
 
-  const row: ShuttleEntryRow = {
-    id: createId("shuttle"),
-    ownerUserId: userId,
-    kind,
-    delta,
-    note: input.note?.trim() || "",
-    createdAt: nowIso(),
-  };
-
-  await repo.shuttleEntries.insert(row);
-  return toView([...rows, row]);
+  return listShuttleTubes(repo, userId);
 }
 
-/**
- * Xoa mot lan bam sai. Cac dong khac giu nguyen delta nen kho tu tinh lai dung;
- * chi chan truong hop xoa xong kho thanh am (vd xoa lan mua 12 trai da dung
- * mat 3) — luc do nguoi dung nen chot lai so cau thay vi xoa lich su.
- */
+export async function createLegacyShuttleEntry(
+  repo: GameRepository,
+  userId: string,
+  input: ShuttleEntryInput,
+): Promise<ApiShuttleTubes> {
+  const tubes = await repo.shuttleTubes.listByOwner(userId);
+  let firstTube = tubes.at(-1);
+  if (!firstTube) {
+    firstTube = {
+      id: createId("tube"),
+      ownerUserId: userId,
+      name: LEGACY_TUBE_NAME,
+      tubePrice: 0,
+      shuttlePrice: 0,
+      initialQuantity: DEFAULT_TUBE_QUANTITY,
+      createdAt: nowIso(),
+    };
+    await repo.shuttleTubes.insert(firstTube);
+  }
+  return createShuttleEntry(repo, userId, firstTube.id, input);
+}
+
 export async function deleteShuttleEntry(
   repo: GameRepository,
   userId: string,
   entryId: string,
-): Promise<ApiShuttleStock> {
+): Promise<ApiShuttleTubes> {
   const existing = await repo.shuttleEntries.getOwned(entryId, userId);
   if (!existing) throw new NotFoundError();
+  if (existing.expenseId) throw new BadRequestError(SHUTTLE_ENTRY_LINKED_ERROR);
 
-  const rows = await repo.shuttleEntries.listByOwner(userId);
-  const remaining = rows.filter((row) => row.id !== entryId);
-  const error = shuttleStockError(computeShuttleStock(remaining));
+  const rows = await repo.shuttleEntries.listByTube(existing.tubeId);
+  const error = shuttleStockError(
+    computeShuttleStock(rows.filter((row) => row.id !== entryId)),
+  );
   if (error) throw new BadRequestError(error);
 
   await repo.shuttleEntries.delete(entryId);
-  return toView(remaining);
+  return listShuttleTubes(repo, userId);
 }

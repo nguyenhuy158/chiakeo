@@ -20,7 +20,7 @@ Everything you can do on the website:
 - **Expenses:** add, edit, remove, exclude, split equally, by shares or by amounts, income, payments between people, ask the AI to read an expense from text or from a receipt photo (`receipt`).
 - **Sharing:** public link (on, off, new), editors by email.
 - **Photos and QR:** add, list, save, caption and delete photos, save a payment QR image. The CLI does not resize: `photo-add` takes a JPEG, PNG or WebP of about 180 KB or less. Resize bigger photos first. `receipt` takes a photo of up to about 6 MB.
-- **Shuttlecocks, stats and options:** stock, fun stats, balances across games, your name and options.
+- **Shuttlecocks, stats and options:** shuttle tubes (`shuttle-tube`, `shuttle-tube-edit`, `shuttle-tube-rm`) with prices and stock per tube, add, use or count shuttles (`shuttle`), fun stats, balances across games, your name and options. An expense in the shuttle category can use stock from a tube through `api` (`"shuttle": {"tubeId", "quantity"}` in the expense body).
 
 Example:
 

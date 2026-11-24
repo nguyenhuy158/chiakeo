@@ -96,6 +96,7 @@ function stubRepo(options: {
       listByExpenseIds: async () => [],
     },
     paymentProfiles: { listByParticipantIds: async () => [] },
+    shuttleEntries: { listByExpenseIds: async () => [] },
     photos: { countByGame: async () => 0 },
     shareLinks: { getLatestByGame: async () => null },
     gameCollaborators: {

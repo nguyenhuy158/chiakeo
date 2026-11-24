@@ -110,8 +110,12 @@ Photos and QR
   qr --bank ID --account NO --out FILE [--amount N] [--name NAME] [--code C]
 
 Shuttlecocks and stats
-  shuttles                       stock and recent changes
-  shuttle <add|use|set> <quantity> [--note NOTE]
+  shuttles                       tubes with stock, prices and recent changes
+  shuttle-tube <name> [--tube-price N] [--shuttle-price N] [--quantity N]
+      new tube, stock starts at --quantity (default 12)
+  shuttle-tube-edit <tube> [--name TEXT] [--tube-price N] [--shuttle-price N] [--quantity N]
+  shuttle-tube-rm <tube>         delete a tube and its history
+  shuttle <tube> <add|use|set> <quantity> [--note NOTE]
   shuttle-rm <entry-id>
   stats                          fun stats of all your games
   balances                       who owes whom across your games
@@ -958,32 +962,100 @@ async function qr({ flags }) {
   console.log(`Saved ${out}`);
 }
 
-async function shuttles() {
-  const { stock, entries } = await authed("GET", "/api/shuttles");
-  console.log(`Stock: ${stock}`);
-  for (const entry of entries) {
-    const sign = entry.delta > 0 ? "+" : "";
+function findTube(tubes, ref) {
+  const key = lower(requireArg(ref, "<tube>"));
+  const found = tubes.find(
+    (tube) => tube.id === ref || lower(tube.name) === key,
+  );
+  if (!found) {
+    const names = tubes.map((tube) => tube.name).join(", ");
+    throw new CliError(`No tube "${ref}". Found: ${names}`);
+  }
+  return found;
+}
+
+async function loadTube(ref) {
+  const { tubes } = await authed("GET", "/api/shuttles");
+  return findTube(tubes, ref);
+}
+
+function printTubes({ tubes }) {
+  for (const tube of tubes) {
     console.log(
-      `${entry.id}  ${sign}${entry.delta}  stock ${entry.stockAfter}  ${entry.note}`,
+      `${tube.id}  ${tube.name}  stock ${tube.stock}  tube ${money(tube.tubePrice)}  shuttle ${money(tube.shuttlePrice)}`,
     );
+    for (const entry of tube.entries) {
+      const sign = entry.delta > 0 ? "+" : "";
+      console.log(
+        `  ${entry.id}  ${sign}${entry.delta}  stock ${entry.stockAfter}  ${entry.note}`,
+      );
+    }
   }
 }
 
+function tubeFields(flags) {
+  const fields = {};
+  if (flags.name !== undefined) fields.name = flags.name;
+  if (flags["tube-price"] !== undefined) {
+    fields.tubePrice = parseAmount(flags["tube-price"]);
+  }
+  if (flags["shuttle-price"] !== undefined) {
+    fields.shuttlePrice = parseAmount(flags["shuttle-price"]);
+  }
+  if (flags.quantity !== undefined) {
+    const quantity = Number(flags.quantity);
+    if (!Number.isInteger(quantity) || quantity < 1) {
+      throw new CliError(`Bad quantity: ${flags.quantity}`);
+    }
+    fields.initialQuantity = quantity;
+  }
+  return fields;
+}
+
+async function shuttles() {
+  printTubes(await authed("GET", "/api/shuttles"));
+}
+
+async function shuttleTube({ positional, flags }) {
+  const name = requireArg(positional[1], "<name>");
+  printTubes(
+    await authed("POST", "/api/shuttles/tubes", {
+      ...tubeFields(flags),
+      name,
+    }),
+  );
+}
+
+async function shuttleTubeEdit({ positional, flags }) {
+  const tube = await loadTube(positional[1]);
+  printTubes(
+    await authed("PATCH", `/api/shuttles/tubes/${tube.id}`, tubeFields(flags)),
+  );
+}
+
+async function shuttleTubeRm({ positional }) {
+  const tube = await loadTube(positional[1]);
+  await authed("DELETE", `/api/shuttles/tubes/${tube.id}`);
+  console.log(`Tube "${tube.name}" deleted.`);
+}
+
 async function shuttle({ positional, flags }) {
-  const kind = requireArg(positional[1], "<add|use|set>");
+  const tube = await loadTube(positional[1]);
+  const kind = requireArg(positional[2], "<add|use|set>");
   if (!SHUTTLE_KINDS.includes(kind)) {
     throw new CliError(`Kind must be one of: ${SHUTTLE_KINDS.join(", ")}`);
   }
-  const quantity = Number(requireArg(positional[2], "<quantity>"));
+  const quantity = Number(requireArg(positional[3], "<quantity>"));
   if (!Number.isInteger(quantity) || quantity < 0) {
-    throw new CliError(`Bad quantity: ${positional[2]}`);
+    throw new CliError(`Bad quantity: ${positional[3]}`);
   }
-  await authed("POST", "/api/shuttles/entries", {
-    kind,
-    quantity,
-    note: flags.note || "",
-  });
-  await shuttles();
+  printTubes(
+    await authed("POST", `/api/shuttles/tubes/${tube.id}/entries`, {
+      kind,
+      quantity,
+      note: flags.note || "",
+    }),
+  );
 }
 
 async function shuttleRm({ positional }) {
@@ -1093,6 +1165,9 @@ const COMMANDS = {
   "photo-rm": photoRm,
   qr,
   shuttles,
+  "shuttle-tube": shuttleTube,
+  "shuttle-tube-edit": shuttleTubeEdit,
+  "shuttle-tube-rm": shuttleTubeRm,
   shuttle,
   "shuttle-rm": shuttleRm,
   stats,

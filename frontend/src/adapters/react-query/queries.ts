@@ -24,6 +24,7 @@ import type {
 } from "../../../../shared/schemas";
 import { DEFAULT_USER_PREFERENCES } from "../../../../shared/schemas";
 import { getGameApi } from "../../core/container";
+import { shuttleKeys } from "./shuttles-query";
 
 export const gameKeys = {
   all: ["games"] as const,
@@ -385,6 +386,7 @@ type GameDetailMutationOptions<TVariables> = {
   refreshPhotos?: boolean;
   /** Lam moi danh ba: dung cho thao tac them/sua/xoa nguoi tham gia. */
   refreshContacts?: boolean;
+  refreshShuttles?: boolean;
   /**
    * Cap nhat cache ngay truoc khi server tra loi. Chi dung cho thao tac
    * khong dong den so tien da tinh (summary) — thu tu, ten, cong tac chia
@@ -452,6 +454,9 @@ function useGameDetailMutation<TVariables>(
       if (options.refreshContacts) {
         queryClient.invalidateQueries({ queryKey: contactKeys.all });
       }
+      if (options.refreshShuttles) {
+        queryClient.invalidateQueries({ queryKey: shuttleKeys.all });
+      }
     },
   });
 }
@@ -476,7 +481,7 @@ export function useAddParticipants(gameId: string) {
 export function useRemoveParticipant() {
   return useGameDetailMutation(
     (participantId: string) => getGameApi().participants.remove(participantId),
-    { refreshPhotos: true, refreshContacts: true },
+    { refreshPhotos: true, refreshContacts: true, refreshShuttles: true },
   );
 }
 
@@ -492,8 +497,9 @@ export function useUpdateParticipant() {
 }
 
 export function useAddExpense(gameId: string) {
-  return useGameDetailMutation((input: ExpenseInput) =>
-    getGameApi().expenses.create(gameId, input),
+  return useGameDetailMutation(
+    (input: ExpenseInput) => getGameApi().expenses.create(gameId, input),
+    { refreshShuttles: true },
   );
 }
 
@@ -501,6 +507,7 @@ export function useUpdateExpense() {
   return useGameDetailMutation(
     (variables: { expenseId: string; input: Partial<ExpenseInput> }) =>
       getGameApi().expenses.update(variables.expenseId, variables.input),
+    { refreshShuttles: true },
   );
 }
 
@@ -519,6 +526,7 @@ export function useRemoveExpense() {
     (expenseId: string) => getGameApi().expenses.remove(expenseId),
     {
       refreshPhotos: true,
+      refreshShuttles: true,
     },
   );
 }

@@ -49,6 +49,7 @@ export type Operation = {
   status?: number;
   access?: (typeof ACCESS)[keyof typeof ACCESS];
   form?: boolean;
+  deprecated?: boolean;
 };
 const { GET, POST, PATCH, DELETE } = HTTP_METHOD;
 const { CREATED } = HTTP_STATUS;
@@ -354,6 +355,31 @@ export const OPERATIONS: Operation[] = [
   {
     method: POST,
     path: "/api/shuttles/entries",
+    response: "Shuttles",
+    input: "shuttleEntryInputSchema",
+    deprecated: true,
+  },
+  {
+    method: POST,
+    path: "/api/shuttles/tubes",
+    response: "Shuttles",
+    input: "shuttleTubeInputSchema",
+    status: CREATED,
+  },
+  {
+    method: PATCH,
+    path: "/api/shuttles/tubes/:tubeId",
+    response: "Shuttles",
+    input: "shuttleTubeUpdateSchema",
+  },
+  {
+    method: DELETE,
+    path: "/api/shuttles/tubes/:tubeId",
+    response: "Shuttles",
+  },
+  {
+    method: POST,
+    path: "/api/shuttles/tubes/:tubeId/entries",
     response: "Shuttles",
     input: "shuttleEntryInputSchema",
   },

@@ -4359,7 +4359,258 @@
         "summary": "POST /api/shuttles/entries",
         "description": "Application REST operation. Runtime Zod refinements and authorization remain authoritative.",
         "tags": ["shuttles"],
+        "deprecated": true,
         "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/shuttleEntryInputSchema"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Shuttles"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request rejected or server error; error contains the application error code or message.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "SecureSessionCookie": []
+          },
+          {
+            "SsoCookie": []
+          },
+          {
+            "SsoBearer": []
+          },
+          {
+            "ApiToken": []
+          }
+        ]
+      }
+    },
+    "/api/shuttles/tubes": {
+      "post": {
+        "operationId": "post__api_shuttles_tubes",
+        "summary": "POST /api/shuttles/tubes",
+        "description": "Application REST operation. Runtime Zod refinements and authorization remain authoritative.",
+        "tags": ["shuttles"],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/shuttleTubeInputSchema"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Shuttles"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request rejected or server error; error contains the application error code or message.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "SecureSessionCookie": []
+          },
+          {
+            "SsoCookie": []
+          },
+          {
+            "SsoBearer": []
+          },
+          {
+            "ApiToken": []
+          }
+        ]
+      }
+    },
+    "/api/shuttles/tubes/{tubeId}": {
+      "patch": {
+        "operationId": "patch__api_shuttles_tubes_tubeId",
+        "summary": "PATCH /api/shuttles/tubes/{tubeId}",
+        "description": "Application REST operation. Runtime Zod refinements and authorization remain authoritative.",
+        "tags": ["shuttles"],
+        "parameters": [
+          {
+            "name": "tubeId",
+            "in": "path",
+            "required": true,
+            "description": "tubeId identifier",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/shuttleTubeUpdateSchema"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Shuttles"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request rejected or server error; error contains the application error code or message.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "SecureSessionCookie": []
+          },
+          {
+            "SsoCookie": []
+          },
+          {
+            "SsoBearer": []
+          },
+          {
+            "ApiToken": []
+          }
+        ]
+      },
+      "delete": {
+        "operationId": "delete__api_shuttles_tubes_tubeId",
+        "summary": "DELETE /api/shuttles/tubes/{tubeId}",
+        "description": "Application REST operation. Runtime Zod refinements and authorization remain authoritative.",
+        "tags": ["shuttles"],
+        "parameters": [
+          {
+            "name": "tubeId",
+            "in": "path",
+            "required": true,
+            "description": "tubeId identifier",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Shuttles"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request rejected or server error; error contains the application error code or message.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "SessionCookie": []
+          },
+          {
+            "SecureSessionCookie": []
+          },
+          {
+            "SsoCookie": []
+          },
+          {
+            "SsoBearer": []
+          },
+          {
+            "ApiToken": []
+          }
+        ]
+      }
+    },
+    "/api/shuttles/tubes/{tubeId}/entries": {
+      "post": {
+        "operationId": "post__api_shuttles_tubes_tubeId_entries",
+        "summary": "POST /api/shuttles/tubes/{tubeId}/entries",
+        "description": "Application REST operation. Runtime Zod refinements and authorization remain authoritative.",
+        "tags": ["shuttles"],
+        "parameters": [
+          {
+            "name": "tubeId",
+            "in": "path",
+            "required": true,
+            "description": "tubeId identifier",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -4764,6 +5015,7 @@
           "health",
           "other",
           "shopping",
+          "shuttle",
           "stay",
           "transport"
         ],
@@ -5119,6 +5371,146 @@
               }
             },
             "required": ["data"]
+          }
+        ]
+      },
+      "ApiShuttleTubes": {
+        "allOf": [
+          {
+            "type": "object",
+            "properties": {
+              "stock": {
+                "type": "number"
+              },
+              "entries": {
+                "type": "array",
+                "items": {
+                  "description": "Mot dong lich su kho cau, kem so cau con lai ngay sau thao tac do.",
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "kind": {
+                      "$ref": "#/components/schemas/ShuttleEntryKind"
+                    },
+                    "delta": {
+                      "description": "Thay doi thuc te len kho: am la bo ra, duong la them vao.",
+                      "type": "number"
+                    },
+                    "stockAfter": {
+                      "description": "Kho sau khi ap dong nay — server tinh san de FE khong phai cong don.",
+                      "type": "number"
+                    },
+                    "note": {
+                      "type": "string"
+                    },
+                    "expenseId": {
+                      "type": ["null", "string"]
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "createdAt",
+                    "delta",
+                    "expenseId",
+                    "id",
+                    "kind",
+                    "note",
+                    "stockAfter"
+                  ]
+                }
+              }
+            },
+            "required": ["entries", "stock"]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "tubes": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "tubePrice": {
+                      "type": "number"
+                    },
+                    "shuttlePrice": {
+                      "type": "number"
+                    },
+                    "initialQuantity": {
+                      "type": "number"
+                    },
+                    "stock": {
+                      "type": "number"
+                    },
+                    "createdAt": {
+                      "type": "string"
+                    },
+                    "entries": {
+                      "type": "array",
+                      "items": {
+                        "description": "Mot dong lich su kho cau, kem so cau con lai ngay sau thao tac do.",
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "kind": {
+                            "$ref": "#/components/schemas/ShuttleEntryKind"
+                          },
+                          "delta": {
+                            "description": "Thay doi thuc te len kho: am la bo ra, duong la them vao.",
+                            "type": "number"
+                          },
+                          "stockAfter": {
+                            "description": "Kho sau khi ap dong nay — server tinh san de FE khong phai cong don.",
+                            "type": "number"
+                          },
+                          "note": {
+                            "type": "string"
+                          },
+                          "expenseId": {
+                            "type": ["null", "string"]
+                          },
+                          "createdAt": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "createdAt",
+                          "delta",
+                          "expenseId",
+                          "id",
+                          "kind",
+                          "note",
+                          "stockAfter"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "createdAt",
+                    "entries",
+                    "id",
+                    "initialQuantity",
+                    "name",
+                    "shuttlePrice",
+                    "stock",
+                    "tubePrice"
+                  ]
+                }
+              }
+            },
+            "required": ["tubes"]
           }
         ]
       },
@@ -5735,6 +6127,18 @@
                   "description": "true la khoan van hien trong danh sach nhung khong tinh vao tong/so du.",
                   "type": "boolean"
                 },
+                "shuttle": {
+                  "type": "object",
+                  "properties": {
+                    "tubeId": {
+                      "type": "string"
+                    },
+                    "quantity": {
+                      "type": "number"
+                    }
+                  },
+                  "required": ["quantity", "tubeId"]
+                },
                 "createdAt": {
                   "type": "string"
                 }
@@ -6076,6 +6480,18 @@
                 "excluded": {
                   "description": "true la khoan van hien trong danh sach nhung khong tinh vao tong/so du.",
                   "type": "boolean"
+                },
+                "shuttle": {
+                  "type": "object",
+                  "properties": {
+                    "tubeId": {
+                      "type": "string"
+                    },
+                    "quantity": {
+                      "type": "number"
+                    }
+                  },
+                  "required": ["quantity", "tubeId"]
                 },
                 "createdAt": {
                   "type": "string"
@@ -6598,51 +7014,7 @@
         ]
       },
       "Shuttles": {
-        "description": "Trang thai kho cau cua user: so hien co + vai thao tac gan nhat.",
-        "type": "object",
-        "properties": {
-          "stock": {
-            "type": "number"
-          },
-          "entries": {
-            "type": "array",
-            "items": {
-              "description": "Mot dong lich su kho cau, kem so cau con lai ngay sau thao tac do.",
-              "type": "object",
-              "properties": {
-                "id": {
-                  "type": "string"
-                },
-                "kind": {
-                  "$ref": "#/components/schemas/ShuttleEntryKind"
-                },
-                "delta": {
-                  "description": "Thay doi thuc te len kho: am la bo ra, duong la them vao.",
-                  "type": "number"
-                },
-                "stockAfter": {
-                  "description": "Kho sau khi ap dong nay — server tinh san de FE khong phai cong don.",
-                  "type": "number"
-                },
-                "note": {
-                  "type": "string"
-                },
-                "createdAt": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "createdAt",
-                "delta",
-                "id",
-                "kind",
-                "note",
-                "stockAfter"
-              ]
-            }
-          }
-        },
-        "required": ["entries", "stock"]
+        "$ref": "#/components/schemas/ApiShuttleTubes"
       },
       "Preferences": {
         "type": "object",
@@ -7229,6 +7601,29 @@
               },
               "required": ["participantId", "value"]
             }
+          },
+          "shuttle": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "tubeId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 64
+                  },
+                  "quantity": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 999
+                  }
+                },
+                "required": ["tubeId", "quantity"]
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": ["amount", "payerParticipantId"]
@@ -7303,6 +7698,29 @@
               },
               "required": ["participantId", "value"]
             }
+          },
+          "shuttle": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "tubeId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 64
+                  },
+                  "quantity": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 999
+                  }
+                },
+                "required": ["tubeId", "quantity"]
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         }
       },
@@ -7544,6 +7962,59 @@
           }
         },
         "required": ["kind", "quantity"]
+      },
+      "shuttleTubeInputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 60
+          },
+          "tubePrice": {
+            "default": 0,
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100000000
+          },
+          "shuttlePrice": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100000000
+          },
+          "initialQuantity": {
+            "default": 12,
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 999
+          }
+        },
+        "required": ["name"]
+      },
+      "shuttleTubeUpdateSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 60
+          },
+          "tubePrice": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100000000
+          },
+          "shuttlePrice": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100000000
+          },
+          "initialQuantity": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 999
+          }
+        }
       },
       "userPreferencesPatchSchema": {
         "type": "object",

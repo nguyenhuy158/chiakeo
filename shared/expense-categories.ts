@@ -15,6 +15,7 @@ export const EXPENSE_CATEGORY_IDS = [
   "transport",
   "stay",
   "fun",
+  "shuttle",
   "shopping",
   "health",
   "other",
@@ -74,6 +75,14 @@ export const EXPENSE_CATEGORIES: ExpenseCategoryMeta[] = [
     barClassName: "bg-pink-500",
     badgeClassName:
       "bg-pink-100 text-pink-900 dark:bg-pink-950 dark:text-pink-200",
+  },
+  {
+    id: "shuttle",
+    label: "Cầu",
+    emoji: "🏸",
+    barClassName: "bg-lime-500",
+    badgeClassName:
+      "bg-lime-100 text-lime-900 dark:bg-lime-950 dark:text-lime-200",
   },
   {
     id: "shopping",
